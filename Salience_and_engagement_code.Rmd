@@ -1,0 +1,97 @@
+---
+title: "Social Identity Salience"
+author: "Jakob Mørup"
+date: "11/29/2021"
+output: html_document
+---
+#loading packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(pacman)
+p_load(tidyverse,tidytext,RedditExtractoR)
+
+```
+
+
+#1. Scraping Data from Reddit
+```{r}
+#getting thread URLs
+Religion_data <- find_thread_urls(
+	keywords = NA,
+	sort_by = "top",
+	subreddit = "religion",
+	period = "day"
+)
+
+#fetching content from URLs
+religion_threads <- get_thread_content(Religion_data$url)
+
+#flattening to a df
+df_rel <- religion_threads[[2]]
+
+#unnesting tokens
+tokens_rel <- df %>% unnest_tokens(word, comment)
+
+
+#getting thread URLs
+Gaming_data <- find_thread_urls(
+	keywords = NA,
+	sort_by = "top",
+	subreddit = "gaming",
+	period = "day"
+)
+
+#fetching content from URLs
+gaming_threads <- get_thread_content(Gaming_data$url[1:30])
+
+#flattening to a df
+df_gam <- gaming_threads[[2]]
+
+#unnesting tokens
+tokens_gam <- df_gam %>% unnest_tokens(word, comment)
+
+```
+
+#2 Calculating the ratio of group pronouns over person pronouns, as a proxy for social identity salience
+```{r}
+#Defining group and person words
+group_words = c("us","we","them","their","our","they")
+person_words = c("i","my","you","your","him","her")
+
+#looking at proportion of group to person words
+sum(tokens_rel$word %in% group_words)/sum(tokens_rel$word %in% person_words)
+sum(tokens_gam$word %in% group_words)/sum(tokens_gam$word %in% person_words)
+
+
+
+
+```
+
+
+#3 Looking at engagement by author, number of threads and comments and plotting as a bar plot
+```{r}
+#Subsetting threads and comment by author
+aut_rel <- c(religion_threads$threads$author,religion_threads$comments$author)
+aut_gam <- c(gaming_threads$threads$author,gaming_threads$comments$author)
+
+
+# summarising number of comments+threads by author in the respective dataframes (r/religion and r/gaming), then printing the mean amount of threads+comments by author
+rel_authors <- df_rel %>% group_by(author) %>%
+	summarise(n = n())
+mean(rel_authors$n)
+#same as above but for the gaming subreddit
+gam_authors <- df_gam %>% group_by(author) %>%
+	summarise(n = n())
+mean(gam_authors$n)
+
+
+#plotting a bar chart with number of threads+comments by author for r/religion
+ggplot(rel_authors,aes( x = author, y = n))+
+	geom_col()
+#same as above but for r/gaming
+ggplot(gam_authors,aes( x = author, y = n))+
+	geom_col()
+```
+
