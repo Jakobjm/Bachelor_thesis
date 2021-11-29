@@ -32,7 +32,7 @@ religion_threads <- get_thread_content(Religion_data$url)
 df_rel <- religion_threads[[2]]
 
 #unnesting tokens
-tokens_rel <- df %>% unnest_tokens(word, comment)
+tokens_rel <- df_rel %>% unnest_tokens(word, comment)
 
 
 #getting thread URLs
