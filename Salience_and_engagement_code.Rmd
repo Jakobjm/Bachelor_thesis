@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 library(pacman)
-p_load(tidyverse,tidytext,RedditExtractoR)
+p_load(tidyverse,tidytext,RedditExtractoR, lubridate)
 
 ```
 
@@ -22,7 +22,7 @@ Religion_data <- find_thread_urls(
 	keywords = NA,
 	sort_by = "top",
 	subreddit = "religion",
-	period = "day"
+	period = "week"
 )
 
 #fetching content from URLs
@@ -40,11 +40,11 @@ Gaming_data <- find_thread_urls(
 	keywords = NA,
 	sort_by = "top",
 	subreddit = "gaming",
-	period = "day"
+	period = "week"
 )
 
 #fetching content from URLs
-gaming_threads <- get_thread_content(Gaming_data$url[1:30])
+gaming_threads <- get_thread_content(Gaming_data$url)
 
 #flattening to a df
 df_gam <- gaming_threads[[2]]
@@ -93,5 +93,20 @@ ggplot(rel_authors,aes( x = author, y = n))+
 #same as above but for r/gaming
 ggplot(gam_authors,aes( x = author, y = n))+
 	geom_col()
+```
+
+
+#4 Looking at consistency or time active in subreddit
+
+```{r}
+dates <- df_rel %>%
+	distinct(author, date, .keep_all = T) %>% 
+	group_by(author) %>% 
+	summarise(n_dates = n()) %>% 
+	mutate(coef_active = n_dates/8)
+ 
+mean(dates$coef_active)
+
+
 ```
 
