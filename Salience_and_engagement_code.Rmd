@@ -22,7 +22,7 @@ Religion_data <- find_thread_urls(
 	keywords = NA,
 	sort_by = "top",
 	subreddit = "religion",
-	period = "day"
+	period = "week"
 )
 
 #fetching content from URLs
@@ -36,21 +36,21 @@ tokens_rel <- df_rel %>% unnest_tokens(word, comment)
 
 
 #getting thread URLs
-Gaming_data <- find_thread_urls(
+DebRel_data <- find_thread_urls(
 	keywords = NA,
 	sort_by = "top",
-	subreddit = "gaming",
-	period = "day"
+	subreddit = "DebateReligion",
+	period = "week"
 )
 
 #fetching content from URLs
-gaming_threads <- get_thread_content(Gaming_data$url)
+DebRel_threads <- get_thread_content(DebRel_data$url)
 
 #flattening to a df
-df_gam <- gaming_threads[[2]]
+df_DebRel <- DebRel_threads[[2]]
 
 #unnesting tokens
-tokens_gam <- df_gam %>% unnest_tokens(word, comment)
+tokens_DebRel <- df_DebRel %>% unnest_tokens(word, comment)
 
 ```
 
@@ -62,10 +62,10 @@ group_words = c("us","we","them","their","our","they")
 
 #looking at proportion of plural pronouns in the text of the two subreddits
 sum(tokens_rel$word %in% group_words)/length(tokens_rel$word)
-sum(tokens_gam$word %in% group_words)/length(tokens_gam$word)
+sum(tokens_DebRel$word %in% group_words)/length(tokens_DebRel$word)
 
 #proportion of proportions, how many more plural pronouns are used in r/religion than in r/gaming per word used.
-(sum(tokens_rel$word %in% group_words)/length(tokens_rel$word))/(sum(tokens_gam$word %in% group_words)/length(tokens_gam$word))
+(sum(tokens_rel$word %in% group_words)/length(tokens_rel$word))/(sum(tokens_DebRel$word %in% group_words)/length(tokens_DebRel$word))
 
 
 ```
@@ -75,24 +75,24 @@ sum(tokens_gam$word %in% group_words)/length(tokens_gam$word)
 ```{r}
 #Subsetting threads and comment by author
 aut_rel <- c(religion_threads$threads$author,religion_threads$comments$author)
-aut_gam <- c(gaming_threads$threads$author,gaming_threads$comments$author)
+aut_DebRel <- c(DebRel_threads$threads$author,DebRel_threads$comments$author)
 
 
-# summarising number of comments+threads by author in the respective dataframes (r/religion and r/gaming), then printing the mean amount of threads+comments by author
+# summarising number of comments+threads by author in the respective dataframes (r/religion and r/DebateReligion), then printing the mean amount of threads+comments by author
 rel_authors <- df_rel %>% group_by(author) %>%
 	summarise(n = n())
 mean(rel_authors$n)
 #same as above but for the gaming subreddit
-gam_authors <- df_gam %>% group_by(author) %>%
+DebRel_authors <- df_DebRel %>% group_by(author) %>%
 	summarise(n = n())
-mean(gam_authors$n)
+mean(DebRel_authors$n)
 
 
 #plotting a bar chart with number of threads+comments by author for r/religion
 ggplot(rel_authors,aes( x = author, y = n))+
 	geom_col()
-#same as above but for r/gaming
-ggplot(gam_authors,aes( x = author, y = n))+
+#same as above but for r/DebateReligion
+ggplot(DebRel_authors,aes( x = author, y = n))+
 	geom_col()
 ```
 
@@ -100,13 +100,21 @@ ggplot(gam_authors,aes( x = author, y = n))+
 #4 Looking at consistency or time active in subreddit
 
 ```{r}
-dates <- df_rel %>%
+dates_DebRel <- df_DebRel %>%
 	distinct(author, date, .keep_all = T) %>% 
 	group_by(author) %>% 
 	summarise(n_dates = n()) %>% 
-	mutate(coef_active = n_dates/8)
+	mutate(coef_active = n_dates/length(unique(df_DebRel$date)))
  
-mean(dates$coef_active)
+mean(dates_DebRel$coef_active)
+
+dates_rel <- df_rel %>%
+	distinct(author, date, .keep_all = T) %>% 
+	group_by(author) %>% 
+	summarise(n_dates = n()) %>% 
+	mutate(coef_active = n_dates/length(unique(df_rel$date)))
+ 
+mean(dates_rel$coef_active)
 
 
 ```
