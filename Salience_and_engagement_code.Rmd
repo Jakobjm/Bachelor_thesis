@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 library(pacman)
-p_load(tidyverse,tidytext,RedditExtractoR, lubridate)
+p_load(tidyverse,tidytext,pushshiftR, lubridate)
 
 ```
 
@@ -18,85 +18,62 @@ p_load(tidyverse,tidytext,RedditExtractoR, lubridate)
 #1. Scraping Data from Reddit
 #religion and debatereligion
 ```{r}
-#getting thread URLs from subred1
-religion_data <- find_thread_urls(
-	keywords = NA,
-	sort_by = "top",
-	subreddit = "religion",
-	period = "week"
-)
-
-#fetching content from URLs
-religion_threads <- get_thread_content(religion_data$url)
-
-#flattening to a df
-df_religion <- religion_threads[[2]]
+#fetching data from r/religion
+df_religion <- getPushshiftDataRecursive(postType = "comment", 
+																				 size = 1000, 
+																				 subreddit = "religion", 
+																				 after ="1638313200", 
+																				 before = "1638918000", 
+																				 nest_level = "5", 
+																				 delay = 0.8)
 
 #unnesting tokens
-tokens_religion <- df_religion %>% unnest_tokens(word, comment)
+tokens_religion <- df_religion %>% unnest_tokens(word, body)
 
 
 #---------------------------------------
 
 
-#getting thread URLs from subred2
-debatereligion_data <- find_thread_urls(
-	keywords = NA,
-	sort_by = "top",
-	subreddit = "debatereligion",
-	period = "week"
-)
-
-#fetching content from URLs
-debatereligion_threads <- get_thread_content(debatereligion_data$url)
-
-#flattening to a df
-df_debatereligion <- debatereligion_threads[[2]]
-
+#fetching data from r/debatereligion
+df_debatereligion <- getPushshiftDataRecursive(postType = "comment", 
+																				 size = 1000, 
+																				 subreddit = "debatereligion", 
+																				 after ="1638313200", 
+																				 before = "1638918000", 
+																				 nest_level = "5", 
+																				 delay = 0.8)
 #unnesting tokens
-tokens_debatereligion <- df_debatereligion %>% unnest_tokens(word, comment)
+tokens_debatereligion <- df_debatereligion %>% unnest_tokens(word, body)
 
 ```
 
 #gunpolitics and canadaguns scraping
 ```{r}
-#getting thread URLs from subred1
-gunpolitics_data <- find_thread_urls(
-	keywords = NA,
-	sort_by = "top",
-	subreddit = "gunpolitics",
-	period = "week"
-)
-
-#fetching content from URLs
-gunpolitics_threads <- get_thread_content(gunpolitics_data$url)
-
-#flattening to a df
-df_gunpolitics <- gunpolitics_threads[[2]]
-
+#fetching data from r/gunpolitics
+df_gunpolitics <- getPushshiftDataRecursive(postType = "comment", 
+																				 size = 1000, 
+																				 subreddit = "gunpolitics", 
+																				 after ="1638313200", 
+																				 before = "1638918000", 
+																				 nest_level = "5", 
+																				 delay = 0.8)
 #unnesting tokens
-tokens_gunpolitics <- df_gunpolitics %>% unnest_tokens(word, comment)
+tokens_gunpolitics <- df_gunpolitics %>% unnest_tokens(word, body)
 
 
 #---------------------------------------
 
 
-#getting thread URLs from subred2
-canadaguns_data <- find_thread_urls(
-	keywords = NA,
-	sort_by = "top",
-	subreddit = "canadaguns",
-	period = "week"
-)
-
-#fetching content from URLs
-canadaguns_threads <- get_thread_content(canadaguns_data$url)
-
-#flattening to a df
-df_canadaguns <- canadaguns_threads[[2]]
-
+#fetching data from r/canadaguns
+df_canadaguns <- getPushshiftDataRecursive(postType = "comment", 
+																				 size = 1000, 
+																				 subreddit = "canadaguns", 
+																				 after ="1638313200", 
+																				 before = "1638918000", 
+																				 nest_level = "5", 
+																				 delay = 0.8)
 #unnesting tokens
-tokens_canadaguns <- df_canadaguns %>% unnest_tokens(word, comment)
+tokens_canadaguns <- df_canadaguns %>% unnest_tokens(word, body)
 ```
 
 
@@ -131,11 +108,11 @@ sum(tokens_canadaguns$word %in% group_words)/length(tokens_canadaguns$word)
 #3 Looking at engagement by author, number of threads and comments and plotting as a bar plot
 ```{r}
 #Subsetting threads and comment by author for the two subreds
-aut_religion <- c(religion_threads$threads$author,religion_threads$comments$author)
-aut_debatereligion <- c(debatereligion_threads$threads$author,debatereligion_threads$comments$author)
-
-aut_gunpolitics <- c(gunpolitics_threads$threads$author,gunpolitics_threads$comments$author)
-aut_canadaguns <- c(canadaguns_threads$threads$author,canadaguns_threads$comments$author)
+#aut_religion <- c(religion_threads$threads$author,religion_threads$comments$author)
+#aut_debatereligion <- c(debatereligion_threads$threads$author,debatereligion_threads$comments$author)
+#
+#aut_gunpolitics <- c(gunpolitics_threads$threads$author,gunpolitics_threads$comments$author)
+#aut_canadaguns <- c(canadaguns_threads$threads$author,canadaguns_threads$comments$author)
 
 
 # summarising number of comments+threads by author in the respective dataframes (r/religion and r/gunpolitics), then printing the mean amount of threads+comments by author
@@ -160,14 +137,14 @@ mean(canadaguns_authors$n)
 #plotting a bar chart with number of threads+comments by author for r/religion
 ggplot(religion_authors,aes( x = author, y = n))+
 	geom_col()
-#same as above but for r/gunpolitics
+#same as above but for r/debatereligion
 ggplot(debatereligion_authors,aes( x = author, y = n))+
 	geom_col()
 
 #same as above but for r/gunpolitics
 ggplot(gunpolitics_authors,aes( x = author, y = n))+
 	geom_col()
-#same as above but for r/gunpolitics
+#same as above but for r/canadaguns
 ggplot(canadaguns_authors,aes( x = author, y = n))+
 	geom_col()
 ```
@@ -176,6 +153,8 @@ ggplot(canadaguns_authors,aes( x = author, y = n))+
 #4 Looking at consistency or time active in subreddit
 
 ```{r}
+df_debatereligion$date <-  as.Date(as.POSIXct(df_debatereligion$created_utc, origin="1970-01-01"))
+
 dates_debatereligion <- df_debatereligion %>%
 	distinct(author, date, .keep_all = T) %>% 
 	group_by(author) %>% 
@@ -183,6 +162,9 @@ dates_debatereligion <- df_debatereligion %>%
 	mutate(coef_active = n_dates/length(unique(df_debatereligion$date)))
  
 mean(dates_debatereligion$coef_active)
+
+
+df_religion$date <-  as.Date(as.POSIXct(df_religion$created_utc, origin="1970-01-01"))
 
 dates_religion <- df_religion %>%
 	distinct(author, date, .keep_all = T) %>% 
@@ -194,6 +176,9 @@ mean(dates_religion$coef_active)
 
 
 #guns
+
+df_gunpolitics$date <-  as.Date(as.POSIXct(df_gunpolitics$created_utc, origin="1970-01-01"))
+
 dates_gunpolitics <- df_gunpolitics %>%
 	distinct(author, date, .keep_all = T) %>% 
 	group_by(author) %>% 
@@ -201,6 +186,9 @@ dates_gunpolitics <- df_gunpolitics %>%
 	mutate(coef_active = n_dates/length(unique(df_gunpolitics$date)))
  
 mean(dates_gunpolitics$coef_active)
+
+
+df_canadaguns$date <-  as.Date(as.POSIXct(df_canadaguns$created_utc, origin="1970-01-01"))
 
 dates_canadaguns <- df_canadaguns %>%
 	distinct(author, date, .keep_all = T) %>% 
