@@ -18,6 +18,8 @@ p_load(tidyverse,tidytext,pushshiftR, lubridate)
 #1. Scraping Data from Reddit
 #religion and debatereligion
 ```{r}
+#after timestamp is beginning date in unix timestamp, currently set to get 1 week of data.
+
 #fetching data from r/religion
 df_religion <- getPushshiftDataRecursive(postType = "comment", 
 																				 size = 1000, 
