@@ -22,7 +22,7 @@ Religion_data <- find_thread_urls(
 	keywords = NA,
 	sort_by = "top",
 	subreddit = "religion",
-	period = "week"
+	period = "day"
 )
 
 #fetching content from URLs
@@ -40,7 +40,7 @@ Gaming_data <- find_thread_urls(
 	keywords = NA,
 	sort_by = "top",
 	subreddit = "gaming",
-	period = "week"
+	period = "day"
 )
 
 #fetching content from URLs
@@ -54,17 +54,18 @@ tokens_gam <- df_gam %>% unnest_tokens(word, comment)
 
 ```
 
-#2 Calculating the ratio of group pronouns over person pronouns, as a proxy for social identity salience
+#2 Calculating the ratio of group pronouns over words, as a proxy for social identity salience
 ```{r}
 #Defining group and person words
 group_words = c("us","we","them","their","our","they")
-person_words = c("i","my","you","your","him","her")
+#person_words = c("i","my","you","your","him","her")
 
-#looking at proportion of group to person words
-sum(tokens_rel$word %in% group_words)/sum(tokens_rel$word %in% person_words)
-sum(tokens_gam$word %in% group_words)/sum(tokens_gam$word %in% person_words)
+#looking at proportion of plural pronouns in the text of the two subreddits
+sum(tokens_rel$word %in% group_words)/length(tokens_rel$word)
+sum(tokens_gam$word %in% group_words)/length(tokens_gam$word)
 
-
+#proportion of proportions, how many more plural pronouns are used in r/religion than in r/gaming per word used.
+(sum(tokens_rel$word %in% group_words)/length(tokens_rel$word))/(sum(tokens_gam$word %in% group_words)/length(tokens_gam$word))
 
 
 ```
