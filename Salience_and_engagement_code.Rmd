@@ -109,13 +109,6 @@ sum(tokens_canadaguns$word %in% group_words)/length(tokens_canadaguns$word)
 
 #3 Looking at engagement by author, number of threads and comments and plotting as a bar plot
 ```{r}
-#Subsetting threads and comment by author for the two subreds
-#aut_religion <- c(religion_threads$threads$author,religion_threads$comments$author)
-#aut_debatereligion <- c(debatereligion_threads$threads$author,debatereligion_threads$comments$author)
-#
-#aut_gunpolitics <- c(gunpolitics_threads$threads$author,gunpolitics_threads$comments$author)
-#aut_canadaguns <- c(canadaguns_threads$threads$author,canadaguns_threads$comments$author)
-
 
 # summarising number of comments+threads by author in the respective dataframes (r/religion and r/gunpolitics), then printing the mean amount of threads+comments by author
 religion_authors <- df_religion %>% group_by(author) %>%
