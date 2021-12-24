@@ -35,6 +35,6 @@ data_religion_vs_atheism <- full_join(data, data_religion)
 data_religion_vs_atheism <- data_religion_vs_atheism %>%
 	mutate(lessthansix = str_count(data_religion_vs_atheism$clean_text,"\\w+")<6) %>%
 	filter(lessthansix == FALSE) %>%
-	select(clean_text, pol_leaning)
+	select(clean_text, pol_leaning, id)
 
 write_csv(data_religion_vs_atheism, "cleaned_atheism_religion_data_1_week")
