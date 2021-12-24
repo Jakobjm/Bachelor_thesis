@@ -18,14 +18,14 @@ p_load(tidyverse,tidytext,pushshiftR, lubridate)
 #1. Scraping Data from Reddit
 #religion and debatereligion
 ```{r}
-#after timestamp is beginning date in unix timestamp, currently set to get 1 week of data.
+#after timestamp is beginning date in unix timestamp, currently set to get 1 month of data.
 
 #fetching data from r/religion
 df_religion <- getPushshiftDataRecursive(postType = "comment", 
 																				 size = 1000, 
 																				 subreddit = "religion", 
-																				 after ="1638313200", 
-																				 before = "1638918000", 
+																				 after ="1636453479", 
+																				 before = "1639045479", 
 																				 nest_level = "5", 
 																				 delay = 0.8)
 
@@ -40,8 +40,8 @@ tokens_religion <- df_religion %>% unnest_tokens(word, body)
 df_debatereligion <- getPushshiftDataRecursive(postType = "comment", 
 																				 size = 1000, 
 																				 subreddit = "debatereligion", 
-																				 after ="1638313200", 
-																				 before = "1638918000", 
+																				 after ="1636453479", 
+																				 before = "1639045479", 
 																				 nest_level = "5", 
 																				 delay = 0.8)
 #unnesting tokens
@@ -55,8 +55,8 @@ tokens_debatereligion <- df_debatereligion %>% unnest_tokens(word, body)
 df_gunpolitics <- getPushshiftDataRecursive(postType = "comment", 
 																				 size = 1000, 
 																				 subreddit = "gunpolitics", 
-																				 after ="1638313200", 
-																				 before = "1638918000", 
+																				 after ="1636453479", 
+																				 before = "1639045479", 
 																				 nest_level = "5", 
 																				 delay = 0.8)
 #unnesting tokens
@@ -70,8 +70,8 @@ tokens_gunpolitics <- df_gunpolitics %>% unnest_tokens(word, body)
 df_canadaguns <- getPushshiftDataRecursive(postType = "comment", 
 																				 size = 1000, 
 																				 subreddit = "canadaguns", 
-																				 after ="1638313200", 
-																				 before = "1638918000", 
+																				 after ="1636453479", 
+																				 before = "1639045479", 
 																				 nest_level = "5", 
 																				 delay = 0.8)
 #unnesting tokens
