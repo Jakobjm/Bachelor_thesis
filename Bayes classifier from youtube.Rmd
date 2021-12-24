@@ -1,0 +1,19 @@
+---
+title: "Bachelor proj bayesian classification"
+output: html_document
+---
+
+
+```{r}
+library(pacman, biocmanager)
+p_load(tidyverse)
+p_load(stopwords, tokenizers, SnowballC, dplyr, tidytext, )
+```
+
+
+```{r}
+religion_data <- read_csv("cleaned_atheism_religion_data_1_week.csv")
+
+
+```
+
