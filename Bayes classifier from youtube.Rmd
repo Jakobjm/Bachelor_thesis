@@ -15,6 +15,11 @@ Preprocess etc.:
 religion_data <- read_csv("cleaned_atheism_religion_data_1_week.csv")
 #setDT(religion_data)
 
+religion_data$pol_leaning[religion_data$pol_leaning == 0] <- "Atheist"
+religion_data$pol_leaning[religion_data$pol_leaning == 1] <- "Religious"
+
+
+
 class(religion_data)
 
 table(religion_data$pol_leaning)
@@ -49,8 +54,8 @@ calc_probs <- function(tokens) {
 
 
 #seperate data
-ath_data <- subset(religion_data1, pol_leaning == 0)
-rel_data <- subset(religion_data1, pol_leaning == 1)
+ath_data <- subset(religion_data1, pol_leaning == "Atheist")
+rel_data <- subset(religion_data1, pol_leaning == "Religious")
 
 
 #calc probabilities
@@ -68,9 +73,9 @@ classify_belief <-  function(input) {
 																strip_punct = TRUE, 
 																strip_numeric = TRUE,
 																stopwords = stopwords::stopwords("en")))
-	print(test)
-	ath_pred <- init_ath * ifelse(is.na(prod(ath_probs[test])), 1, prod(ath_probs[test]))
-	rel_pred <- init_rel * ifelse(is.na(prod(rel_probs[test])), 1, prod(rel_probs[test]))
+	#print(test)
+	ath_pred <- init_ath * prod(ath_probs[test])
+	rel_pred <- init_rel * prod(rel_probs[test])
 	
 	if (rel_pred > ath_pred) {
 		return ("Religious")
@@ -82,11 +87,27 @@ classify_belief <-  function(input) {
 
 Tests
 ```{r}
-classify_belief("greek church tells priests to ignore pandemic closure order") #wrong
-classify_belief("tn church holds threeday covid superspreader conference in") #wrong
+#classify_belief("greek church tells priests to ignore pandemic closure order") #wrong
+#classify_belief("tn church holds threeday covid superspreader conference in") #wrong
 
-classifications <- for(i in length(religion_data$clean_text)
-											 classify_belief(religion_data$clean_text[9])
+predict_naivebayes <- function(input_df) {
+	predictions <- c()
+
+	for (i in 1:nrow(input_df)) {
+		text <- religion_data$clean_text[i]
+		predictions[i] <- classify_belief(text)
+	}
+	
+	name <- deparse(substitute(input_df))
+	name <- paste0(name,"_predictions") 
+	assign(name, cbind(input_df, predictions),envir = .GlobalEnv	)
+}
+
+
+predict_naivebayes(religion_data)
+
+sum(religion_data_predictions$pol_leaning == religion_data_predictions$predictions)/sum(religion_data_predictions$pol_leaning != religion_data_predictions$predictions)
+
 
 ```
 
