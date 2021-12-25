@@ -6,14 +6,88 @@ output: html_document
 
 ```{r}
 library(pacman, biocmanager)
-p_load(tidyverse)
-p_load(stopwords, tokenizers, SnowballC, dplyr, tidytext, )
+p_load(stopwords, tokenizers, SnowballC, dplyr, tidytext)
+p_load(tidyverse, data.table)
 ```
+
+Preprocess etc.:
+```{r}
+religion_data <- read_csv("cleaned_atheism_religion_data_1_week.csv")
+#setDT(religion_data)
+
+class(religion_data)
+
+table(religion_data$pol_leaning)
+
+#initial probability ((i don't know what the 1's or zeroes stand for rn so we need to change that probably))ø
+init_ath <- (table(religion_data$pol_leaning) / sum(table(religion_data$pol_leaning)))[1]
+init_rel <- (table(religion_data$pol_leaning) / sum(table(religion_data$pol_leaning)))[2]
+
+
+
+#Cleaning: 
+religion_data1 <- religion_data
+religion_data1$clean_text <- (tokenize_words(religion_data$clean_text,
+																						lowercase = TRUE,
+																						strip_punct = TRUE,
+																						strip_numeric = TRUE,
+																						stopwords = stopwords::stopwords("en"))
+																						)
+#Remove words with less than 1 character???
+
+```
+
 
 
 ```{r}
-religion_data <- read_csv("cleaned_atheism_religion_data_1_week.csv")
+
+#function for setting up the model
+calc_probs <- function(tokens) {
+	counts <- table(unlist(tokens)) + 1
+	(counts/sum(counts))
+}
+
+
+#seperate data
+ath_data <- subset(religion_data1, pol_leaning == 0)
+rel_data <- subset(religion_data1, pol_leaning == 1)
+
+
+#calc probabilities
+ath_probs <- calc_probs(ath_data$clean_text)
+rel_probs <- calc_probs(rel_data$clean_text)
 
 
 ```
+
+Actual classifier function
+```{r}
+classify_belief <-  function(input) {
+	test <- unlist(tokenize_words(input,
+																lowercase = TRUE, 
+																strip_punct = TRUE, 
+																strip_numeric = TRUE,
+																stopwords = stopwords::stopwords("en")))
+	print(test)
+	ath_pred <- init_ath * ifelse(is.na(prod(ath_probs[test])), 1, prod(ath_probs[test]))
+	rel_pred <- init_rel * ifelse(is.na(prod(rel_probs[test])), 1, prod(rel_probs[test]))
+	
+	if (rel_pred > ath_pred) {
+		return ("Religious")
+	} else {
+		return ("Atheist")
+	}
+}
+```
+
+Tests
+```{r}
+classify_belief("greek church tells priests to ignore pandemic closure order") #wrong
+classify_belief("tn church holds threeday covid superspreader conference in") #wrong
+
+classifications <- for(i in length(religion_data$clean_text)
+											 classify_belief(religion_data$clean_text[9])
+
+```
+
 
