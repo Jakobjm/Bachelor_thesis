@@ -6,7 +6,7 @@ output: html_document
 
 ```{r}
 library(pacman, biocmanager)
-p_load(stopwords, tokenizers, SnowballC, dplyr, tidytext)
+p_load(stopwords, tokenizers, SnowballC, dplyr, tidytext, caret)
 p_load(tidyverse, data.table)
 ```
 
@@ -83,6 +83,21 @@ classify_belief <-  function(input) {
 		return ("Atheist")
 	}
 }
+
+
+
+classify_belief2 <-  function(input) {
+	test <- unlist(tokenize_words(input,
+																lowercase = TRUE, 
+																strip_punct = TRUE, 
+																strip_numeric = TRUE,
+																stopwords = stopwords::stopwords("en")))
+	#print(test)
+	ath_pred <- init_ath * ifelse(is.na(prod(ath_probs[test])), 1, prod(ath_probs[test]))
+	rel_pred <- init_rel * ifelse(is.na(prod(rel_probs[test])), 1, prod(rel_probs[test]))
+	
+	return(c(ath_pred, rel_pred))
+}
 ```
 
 Tests
@@ -104,9 +119,36 @@ predict_naivebayes <- function(input_df) {
 }
 
 
+
+
+predict_naivebayes2 <- function(input_df) {
+	predictions <- matrix(nrow = length(input_df$clean_text), ncol = 2)
+	colnames(predictions) <- c("Atheism" ,"Religion")
+
+	for (i in 1:nrow(input_df)) {
+		text <- religion_data$clean_text[i]
+		predictions[i,] <- classify_belief2(text)
+	}
+	
+	name <- deparse(substitute(input_df))
+	name <- paste0(name,"_predictions_dist") 
+	assign(name, cbind(input_df, predictions),envir = .GlobalEnv	)
+}
+
 predict_naivebayes(religion_data)
 
-sum(religion_data_predictions$pol_leaning == religion_data_predictions$predictions)/sum(religion_data_predictions$pol_leaning != religion_data_predictions$predictions)
+predict_naivebayes2(religion_data)
+
+ggplot(religion_data_predictions_dist, aes(x=Atheism-Religion))+
+	geom_density()
+
+sum(religion_data_predictions$pol_leaning == religion_data_predictions$predictions)/nrow(religion_data_predictions)
+
+religion_data_predictions_ath <- religion_data_predictions %>% filter(pol_leaning == "Atheist")
+religion_data_predictions_rel <- religion_data_predictions %>% filter(pol_leaning == "Religious")
+
+sum(religion_data_predictions_ath$pol_leaning == religion_data_predictions_ath$predictions)/nrow(religion_data_predictions_ath)
+sum(religion_data_predictions_rel$pol_leaning == religion_data_predictions_rel$predictions)/nrow(religion_data_predictions_rel)
 
 
 ```
