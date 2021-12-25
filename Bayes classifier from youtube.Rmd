@@ -16,6 +16,8 @@ religion_data <- read_csv("cleaned_atheism_religion_data_1_week.csv")
 #setDT(religion_data)
 
 
+religion_data$pol_leaning[religion_data$pol_leaning == 0] <- "Atheist"
+religion_data$pol_leaning[religion_data$pol_leaning == 1] <- "Religious"
 
 
 class(religion_data)
@@ -51,8 +53,6 @@ calc_probs <- function(tokens) {
 }
 
 
-religion_data1$pol_leaning[religion_data1$pol_leaning == 0] <- "Atheist"
-religion_data1$pol_leaning[religion_data1$pol_leaning == 1] <- "Religious"
 #seperate data
 ath_data <- subset(religion_data1, pol_leaning == "Atheist")
 rel_data <- subset(religion_data1, pol_leaning == "Religious")
