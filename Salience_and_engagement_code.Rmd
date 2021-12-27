@@ -15,70 +15,79 @@ p_load(tidyverse,tidytext,pushshiftR, lubridate)
 ```
 
 
-#1. Scraping Data from Reddit
-#religion and debatereligion
+<!-- #1. Scraping Data from Reddit -->
+<!-- #religion and debatereligion -->
+<!-- ```{r} -->
+<!-- #after timestamp is beginning date in unix timestamp, currently set to get 1 month of data. -->
+
+<!-- #fetching data from r/religion -->
+<!-- df_religion <- getPushshiftDataRecursive(postType = "comment",  -->
+<!-- 																				 size = 1000,  -->
+<!-- 																				 subreddit = "religion",  -->
+<!-- 																				 after ="1636453479",  -->
+<!-- 																				 before = "1639045479",  -->
+<!-- 																				 nest_level = "5",  -->
+<!-- 																				 delay = 0.8) -->
+
+<!-- #unnesting tokens -->
+<!-- tokens_religion <- df_religion %>% unnest_tokens(word, body) -->
+
+
+<!-- #--------------------------------------- -->
+
+
+<!-- #fetching data from r/debatereligion -->
+<!-- df_debatereligion <- getPushshiftDataRecursive(postType = "comment",  -->
+<!-- 																				 size = 1000,  -->
+<!-- 																				 subreddit = "debatereligion",  -->
+<!-- 																				 after ="1636453479",  -->
+<!-- 																				 before = "1639045479",  -->
+<!-- 																				 nest_level = "5",  -->
+<!-- 																				 delay = 0.8) -->
+<!-- #unnesting tokens -->
+<!-- tokens_debatereligion <- df_debatereligion %>% unnest_tokens(word, body) -->
+
+<!-- ``` -->
+
+<!-- #gunpolitics and canadaguns scraping -->
+<!-- ```{r} -->
+<!-- #fetching data from r/gunpolitics -->
+<!-- df_gunpolitics <- getPushshiftDataRecursive(postType = "comment",  -->
+<!-- 																				 size = 1000,  -->
+<!-- 																				 subreddit = "gunpolitics",  -->
+<!-- 																				 after ="1636453479",  -->
+<!-- 																				 before = "1639045479",  -->
+<!-- 																				 nest_level = "5",  -->
+<!-- 																				 delay = 0.8) -->
+<!-- #unnesting tokens -->
+<!-- tokens_gunpolitics <- df_gunpolitics %>% unnest_tokens(word, body) -->
+
+
+<!-- #--------------------------------------- -->
+
+
+<!-- #fetching data from r/canadaguns -->
+<!-- df_canadaguns <- getPushshiftDataRecursive(postType = "comment",  -->
+<!-- 																				 size = 1000,  -->
+<!-- 																				 subreddit = "canadaguns",  -->
+<!-- 																				 after ="1636453479",  -->
+<!-- 																				 before = "1639045479",  -->
+<!-- 																				 nest_level = "5",  -->
+<!-- 																				 delay = 0.8) -->
+<!-- #unnesting tokens -->
+<!-- tokens_canadaguns <- df_canadaguns %>% unnest_tokens(word, body) -->
+<!-- ``` -->
+
+
+#1 loading data
+
 ```{r}
-#after timestamp is beginning date in unix timestamp, currently set to get 1 month of data.
+df_religion <- read.csv("rel1week.csv")
+df_canadaguns <- read.csv("provsantigun1week.csv")
 
-#fetching data from r/religion
-df_religion <- getPushshiftDataRecursive(postType = "comment", 
-																				 size = 1000, 
-																				 subreddit = "religion", 
-																				 after ="1636453479", 
-																				 before = "1639045479", 
-																				 nest_level = "5", 
-																				 delay = 0.8)
-
-#unnesting tokens
-tokens_religion <- df_religion %>% unnest_tokens(word, body)
-
-
-#---------------------------------------
-
-
-#fetching data from r/debatereligion
-df_debatereligion <- getPushshiftDataRecursive(postType = "comment", 
-																				 size = 1000, 
-																				 subreddit = "debatereligion", 
-																				 after ="1636453479", 
-																				 before = "1639045479", 
-																				 nest_level = "5", 
-																				 delay = 0.8)
-#unnesting tokens
-tokens_debatereligion <- df_debatereligion %>% unnest_tokens(word, body)
-
+tokens_religion <- df_religion %>% unnest_tokens(word, clean_text)
+tokens_canadaguns <- df_canadaguns %>% unnest_tokens(word, clean_text)
 ```
-
-#gunpolitics and canadaguns scraping
-```{r}
-#fetching data from r/gunpolitics
-df_gunpolitics <- getPushshiftDataRecursive(postType = "comment", 
-																				 size = 1000, 
-																				 subreddit = "gunpolitics", 
-																				 after ="1636453479", 
-																				 before = "1639045479", 
-																				 nest_level = "5", 
-																				 delay = 0.8)
-#unnesting tokens
-tokens_gunpolitics <- df_gunpolitics %>% unnest_tokens(word, body)
-
-
-#---------------------------------------
-
-
-#fetching data from r/canadaguns
-df_canadaguns <- getPushshiftDataRecursive(postType = "comment", 
-																				 size = 1000, 
-																				 subreddit = "canadaguns", 
-																				 after ="1636453479", 
-																				 before = "1639045479", 
-																				 nest_level = "5", 
-																				 delay = 0.8)
-#unnesting tokens
-tokens_canadaguns <- df_canadaguns %>% unnest_tokens(word, body)
-```
-
-
 
 
 #2 Calculating the ratio of group pronouns over words, as a proxy for social identity salience
@@ -89,19 +98,19 @@ group_words = c("us","we","them","their", "they", "theirs", "themselves", "our",
 
 #looking at proportion of plural pronouns in the text of the two subreddits
 sum(tokens_religion$word %in% group_words)/length(tokens_religion$word)
-sum(tokens_debatereligion$word %in% group_words)/length(tokens_debatereligion$word)
+#sum(tokens_debatereligion$word %in% group_words)/length(tokens_debatereligion$word)
 
 #proportion of proportions, how many more plural pronouns are used in r/religion than in r/gaming per word used.
-(sum(tokens_religion$word %in% group_words)/length(tokens_religion$word))/(sum(tokens_debatereligion$word %in% group_words)/length(tokens_debatereligion$word))
+#(sum(tokens_religion$word %in% group_words)/length(tokens_religion$word))/(sum(tokens_debatereligion$word %in% group_words)/length(tokens_debatereligion$word))
 
 
 
 #looking at proportion of plural pronouns in the text of the two subreddits
-sum(tokens_gunpolitics$word %in% group_words)/length(tokens_gunpolitics$word)
+#sum(tokens_gunpolitics$word %in% group_words)/length(tokens_gunpolitics$word)
 sum(tokens_canadaguns$word %in% group_words)/length(tokens_canadaguns$word)
 
 #proportion of proportions, how many more plural pronouns are used in r/religion than in r/gaming per word used.
-(sum(tokens_gunpolitics$word %in% group_words)/length(tokens_gunpolitics$word))/(sum(tokens_canadaguns$word %in% group_words)/length(tokens_canadaguns$word))
+(sum(tokens_religion$word %in% group_words)/length(tokens_religion$word))/(sum(tokens_canadaguns$word %in% group_words)/length(tokens_canadaguns$word))
 
 
 ```
@@ -111,36 +120,39 @@ sum(tokens_canadaguns$word %in% group_words)/length(tokens_canadaguns$word)
 ```{r}
 
 # summarising number of comments+threads by author in the respective dataframes (r/religion and r/gunpolitics), then printing the mean amount of threads+comments by author
-religion_authors <- df_religion %>% group_by(author) %>%
+df_religion$author <- as.factor(df_religion$author)
+nlevels(df_religion$author)
+
+religion_author <- df_religion %>% group_by(author) %>%
 	summarise(n = n())
-mean(religion_authors$n)
+mean(religion_author$n)
 #same as above but for the gaming subreddit
-debatereligion_authors <- df_debatereligion %>% group_by(author) %>%
-	summarise(n = n())
-mean(debatereligion_authors$n)
+#debatereligion_authors <- df_debatereligion %>% group_by(author) %>%
+	#summarise(n = n())
+#mean(debatereligion_authors$n)
 
 #same as above but for the gaming subreddit
-gunpolitics_authors <- df_gunpolitics %>% group_by(author) %>%
-	summarise(n = n())
-mean(gunpolitics_authors$n)
+#gunpolitics_authors <- df_gunpolitics %>% group_by(author) %>%
+	#summarise(n = n())
+#mean(gunpolitics_authors$n)
 #same as above but for the gaming subreddit
-canadaguns_authors <- df_canadaguns %>% group_by(author) %>%
+canadaguns_author <- df_canadaguns %>% group_by(author) %>%
 	summarise(n = n())
-mean(canadaguns_authors$n)
+mean(canadaguns_author$n)
 
 
 #plotting a bar chart with number of threads+comments by author for r/religion
-ggplot(religion_authors,aes( x = author, y = n))+
+ggplot(religion_author,aes( x = author, y = n))+
 	geom_col()
 #same as above but for r/debatereligion
-ggplot(debatereligion_authors,aes( x = author, y = n))+
-	geom_col()
+#ggplot(debatereligion_authors,aes( x = author, y = n))+
+	#geom_col()
 
 #same as above but for r/gunpolitics
-ggplot(gunpolitics_authors,aes( x = author, y = n))+
-	geom_col()
+#ggplot(gunpolitics_authors,aes( x = author, y = n))+
+	#geom_col()
 #same as above but for r/canadaguns
-ggplot(canadaguns_authors,aes( x = author, y = n))+
+ggplot(canadaguns_author,aes( x = author, y = n))+
 	geom_col()
 ```
 
@@ -148,18 +160,18 @@ ggplot(canadaguns_authors,aes( x = author, y = n))+
 #4 Looking at consistency or time active in subreddit
 
 ```{r}
-df_debatereligion$date <-  as.Date(as.POSIXct(df_debatereligion$created_utc, origin="1970-01-01"))
+#df_debatereligion$date <-  as.Date(as.POSIXct(df_debatereligion$created_utc, origin="1970-01-01"))
 
-dates_debatereligion <- df_debatereligion %>%
-	distinct(author, date, .keep_all = T) %>% 
-	group_by(author) %>% 
-	summarise(n_dates = n()) %>% 
-	mutate(coef_active = n_dates/length(unique(df_debatereligion$date)))
+#dates_debatereligion <- df_debatereligion %>%
+	#distinct(author, date, .keep_all = T) %>% 
+	#group_by(author) %>% 
+	#summarise(n_dates = n()) %>% 
+	#mutate(coef_active = n_dates/length(unique(df_debatereligion$date)))
  
-mean(dates_debatereligion$coef_active)
+#mean(dates_debatereligion$coef_active)
 
 
-df_religion$date <-  as.Date(as.POSIXct(df_religion$created_utc, origin="1970-01-01"))
+#df_religion$date <-  as.Date(as.POSIXct(df_religion$created_utc, origin="1970-01-01"))
 
 dates_religion <- df_religion %>%
 	distinct(author, date, .keep_all = T) %>% 
@@ -172,18 +184,18 @@ mean(dates_religion$coef_active)
 
 #guns
 
-df_gunpolitics$date <-  as.Date(as.POSIXct(df_gunpolitics$created_utc, origin="1970-01-01"))
+#df_gunpolitics$date <-  as.Date(as.POSIXct(df_gunpolitics$created_utc, origin="1970-01-01"))
 
-dates_gunpolitics <- df_gunpolitics %>%
-	distinct(author, date, .keep_all = T) %>% 
-	group_by(author) %>% 
-	summarise(n_dates = n()) %>% 
-	mutate(coef_active = n_dates/length(unique(df_gunpolitics$date)))
+#dates_gunpolitics <- df_gunpolitics %>%
+	#distinct(author, date, .keep_all = T) %>% 
+	#group_by(author) %>% 
+	#summarise(n_dates = n()) %>% 
+	#mutate(coef_active = n_dates/length(unique(df_gunpolitics$date)))
  
-mean(dates_gunpolitics$coef_active)
+#mean(dates_gunpolitics$coef_active)
 
 
-df_canadaguns$date <-  as.Date(as.POSIXct(df_canadaguns$created_utc, origin="1970-01-01"))
+#df_canadaguns$date <-  as.Date(as.POSIXct(df_canadaguns$created_utc, origin="1970-01-01"))
 
 dates_canadaguns <- df_canadaguns %>%
 	distinct(author, date, .keep_all = T) %>% 
