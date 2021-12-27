@@ -85,7 +85,7 @@ classify_belief <-  function(input) {
 	anti_pred <- prior_anti * ifelse(is.na(prod(anti_probs[test])), 1, prod(anti_probs[test]))
 	pro_pred <- prior_pro * ifelse(is.na(prod(pro_probs[test])), 1, prod(pro_probs[test]))
 	
-	return(c(anti_pred, pro_pred,	if (pro_pred < anti_pred) {
+	return(c(anti_pred, pro_pred,	if (anti_pred > pro_pred) {
 		("pro")
 	} else {("anti")}))
 }
@@ -107,7 +107,7 @@ predict_naivebayes <- function(input_df) {
 	
 	name <- deparse(substitute(input_df))
 	name <- paste0(name,"_predictions") 
-	assign(name, cbind(input_df, predictions),envir = .GlobalEnv	)
+	assign(name, cbind(input_df, predictions),envir = .GlobalEnv)
 }
 
 ```
@@ -122,8 +122,13 @@ predict_naivebayes(guns_test)
 guns_test_predictions$anti <- as.numeric(guns_test_predictions$anti)
 guns_test_predictions$pro <- as.numeric(guns_test_predictions$pro)
 
+guns_test_predictions <-  guns_test_predictions %>% 
+	mutate(leaning_comb = anti-pro)
+
+
+
 #plotting distribution of anti - pro score, to visualize predictions, if values are negative the model will assign the "pro" label if positive the "anti" label. Values closer to 0 indicate higher uncertainty.
-ggplot(guns_test_predictions, aes(x=anti-pro))+
+ggplot(guns_test_predictions, aes(x=leaning_comb))+
 	geom_density()
 
 #calculating the accuracy, number of cases where the prediction matches the label(correct classifications) divided by the total number of cases.
@@ -145,10 +150,13 @@ sum(guns_test_predictions_pro$pol_leaning == guns_test_predictions_pro$predictio
 # summarising by author to get labels for nodes
 ```{r}
 guns_test_predictions_to_nodes <- guns_test_predictions %>%
-	select(author, anti, pro) %>% 
+	select(author, leaning_comb) %>% 
 	group_by(author) %>% 
-	summarise(mean_anti = mean(anti), mean_pro = mean(pro)) %>% 
-	mutate(leaning = if_else(mean_anti>mean_pro,"anti", "pro"))
+	summarise(mean_leaning_comb = mean(leaning_comb)) %>% 
+	mutate(leaning = case_when(
+		mean_leaning_comb > .25 ~ "anti",
+		0.25 >= mean_leaning_comb & mean_leaning_comb > -0.25 ~ "neutral",
+		mean_leaning_comb < -.25 ~ "pro"))
 
 
 ```
