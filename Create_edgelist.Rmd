@@ -86,22 +86,36 @@ parent_id_list <- unique(data_comb$parent_id)
 # 	}
 # }
 
-
-has_parent_in_data <- data.frame(id_list) %>%
-	mutate(id_list %in% parent_id_list)
+edgelist <-  data.frame()
 
 
-for (i in 1:nrow(data_comb$id)) {
+for (i in 1:nrow(data_comb)) {
 	from = data_comb$author[i]
 	
-	x = data_comb$parent_id[i]
+	comment = data_comb$id[i]
 	
-	y = filter(data_comb$id == x)
+	comment_to = data_comb$parent_id[i]
 	
-		
+	parent_id_row = data_comb[which(data_comb$id == comment_to),]
+	
+	to = if_else(nrow(parent_id_row$author) == 1, parent_id_row$author, "NA")
+	
+	edge = c(from, to)
+	
+	edgelist <- rbind(edgelist,edge)
 	}
+
+
 	
-}
+comment = data_comb$id[1]
+	
+comment_to = data_comb$parent_id[1]
+	
+nrow(data_comb[which(data_comb$id == comment_to),])
+	
+
+
+
 
 ```
 
