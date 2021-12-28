@@ -147,7 +147,7 @@ sum(guns_test_predictions_pro$pol_leaning == guns_test_predictions_pro$predictio
 ```
 
 
-# summarising by author to get labels for nodes
+# summarising by author to get labels for nodes, and saving to nodelist
 ```{r}
 guns_test_predictions_to_nodes <- guns_test_predictions %>%
 	select(author, leaning_comb) %>% 
@@ -156,7 +156,9 @@ guns_test_predictions_to_nodes <- guns_test_predictions %>%
 	mutate(leaning = case_when(
 		mean_leaning_comb > .25 ~ "anti",
 		0.25 >= mean_leaning_comb & mean_leaning_comb > -0.25 ~ "neutral",
-		mean_leaning_comb < -.25 ~ "pro"))
+		mean_leaning_comb < -.25 ~ "pro")
+		) %>% 
+	write_csv("../data/[insert_topic_here]_nodelist.csv")
 
 
 ```
