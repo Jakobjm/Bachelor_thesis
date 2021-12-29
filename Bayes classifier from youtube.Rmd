@@ -10,41 +10,46 @@ p_load(stopwords, tokenizers, SnowballC, dplyr, tidytext, caret)
 p_load(tidyverse, data.table)
 ```
 
-Preprocess etc.:
+# Preprocess etc.:
 ```{r}
-religion_data <- read_csv("cleaned_atheism_religion_data_1_week.csv")
-#setDT(religion_data)
-
-
-religion_data$pol_leaning[religion_data$pol_leaning == 0] <- "Atheist"
-religion_data$pol_leaning[religion_data$pol_leaning == 1] <- "Religious"
-
-
-class(religion_data)
-
-table(religion_data$pol_leaning)
-
-#initial probability ((i don't know what the 1's or zeroes stand for rn so we need to change that probably))ø
-init_ath <- (table(religion_data$pol_leaning) / sum(table(religion_data$pol_leaning)))[1]
-init_rel <- (table(religion_data$pol_leaning) / sum(table(religion_data$pol_leaning)))[2]
-
-
+guns_data <- read_csv("clean_proantiguns_6months.csv")
 
 #Cleaning: 
-religion_data1 <- religion_data
-religion_data1$clean_text <- (tokenize_words(religion_data$clean_text,
+
+sub_gun <- guns_data %>% 
+	filter(pol_leaning == "pro") %>% 
+	sample_n(size = nrow(filter(guns_data, pol_leaning == "anti")),prob = NULL, replace =FALSE)
+
+guns_data1 <- guns_data %>% 
+	filter(pol_leaning =="anti") %>% 
+	rbind(sub_gun)
+
+
+#creating an 80% train 20% test split
+sample <- sample.int(n = nrow(guns_data1), size = floor(.80*nrow(guns_data1)), replace = F)
+guns_train <- guns_data1[sample, ]
+guns_test  <- guns_data1[-sample, ]
+
+
+#tokenizing
+guns_train$clean_text <- (tokenize_words(guns_train$clean_text,
 																						lowercase = TRUE,
 																						strip_punct = TRUE,
 																						strip_numeric = TRUE,
 																						stopwords = stopwords::stopwords("en"))
 																						)
-#Remove words with less than 1 character???
+
 
 ```
 
-
-
+#training the model on the train set
 ```{r}
+
+table(guns_train$pol_leaning)
+
+#prior probability
+prior_anti <- (table(guns_train$pol_leaning) / sum(table(guns_train$pol_leaning)))[1]
+prior_pro <- (table(guns_train$pol_leaning) / sum(table(guns_train$pol_leaning)))[2]
 
 #function for setting up the model
 calc_probs <- function(tokens) {
@@ -54,19 +59,22 @@ calc_probs <- function(tokens) {
 
 
 #seperate data
-ath_data <- subset(religion_data1, pol_leaning == "Atheist")
-rel_data <- subset(religion_data1, pol_leaning == "Religious")
+anti_data <- subset(guns_train, pol_leaning == "anti")
+pro_data <- subset(guns_train, pol_leaning == "pro")
 
 
 #calc probabilities
-ath_probs <- calc_probs(ath_data$clean_text)
-rel_probs <- calc_probs(rel_data$clean_text)
+anti_probs <- calc_probs(anti_data$clean_text)
+pro_probs <- calc_probs(pro_data$clean_text)
 
 
 ```
 
-Actual classifier function
+#Actual classifier function
 ```{r}
+#naive bayes classifier, tokenizes, lowercases, strips punctuation, numeric values, and common english stopwords, then calculates posterior probability that a post belongs to a given leaning/subreddit 
+# by multiplying prior probability with the joint probability for each token in the post to be in posts of that leaning, NAs are treated as a 1, as that shouldn't affect the joint probability  
+# as p(x)*p(y)*p(z)*1 == p(x)*p(y)*p(z). Then it returns the posterior probabilities of the post beloning to each leaning and a label based on which has the highest probability.
 classify_belief <-  function(input) {
 	test <- unlist(tokenize_words(input,
 																lowercase = TRUE, 
@@ -74,83 +82,83 @@ classify_belief <-  function(input) {
 																strip_numeric = TRUE,
 																stopwords = stopwords::stopwords("en")))
 	#print(test)
-	ath_pred <- init_ath * ifelse(is.na(prod(ath_probs[test])), 1, prod(ath_probs[test]))
-	rel_pred <- init_rel * ifelse(is.na(prod(rel_probs[test])), 1, prod(rel_probs[test]))
+	anti_pred <- prior_anti * ifelse(is.na(prod(anti_probs[test])), 1, prod(anti_probs[test]))
+	pro_pred <- prior_pro * ifelse(is.na(prod(pro_probs[test])), 1, prod(pro_probs[test]))
 	
-	if (rel_pred > ath_pred) {
-		return ("Religious")
-	} else {
-		return ("Atheist")
-	}
+	return(c(anti_pred, pro_pred,	if (anti_pred > pro_pred) {
+		("pro")
+	} else {("anti")}))
 }
 
-
-
-classify_belief2 <-  function(input) {
-	test <- unlist(tokenize_words(input,
-																lowercase = TRUE, 
-																strip_punct = TRUE, 
-																strip_numeric = TRUE,
-																stopwords = stopwords::stopwords("en")))
-	#print(test)
-	ath_pred <- init_ath * ifelse(is.na(prod(ath_probs[test])), 1, prod(ath_probs[test]))
-	rel_pred <- init_rel * ifelse(is.na(prod(rel_probs[test])), 1, prod(rel_probs[test]))
-	
-	return(c(ath_pred, rel_pred))
-}
 ```
 
-Tests
+#function to run our classifier on a dataset
 ```{r}
-#classify_belief("greek church tells priests to ignore pandemic closure order") #wrong
-#classify_belief("tn church holds threeday covid superspreader conference in") #wrong
 
+# creates a matrix to fill in with values from predictions, then runs the classify belief function, writes the output into the matrix names and saves to globalEnv a new dataframe with predictions appended
 predict_naivebayes <- function(input_df) {
-	predictions <- c()
+	predictions <- matrix(nrow = length(input_df$clean_text), ncol = 3)
+	colnames(predictions) <- c("anti" ,"pro", "prediction")
 
 	for (i in 1:nrow(input_df)) {
-		text <- religion_data$clean_text[i]
-		predictions[i] <- classify_belief(text)
+		text <- input_df$clean_text[i]
+		predictions[i,] <- classify_belief(text)
 	}
 	
 	name <- deparse(substitute(input_df))
 	name <- paste0(name,"_predictions") 
-	assign(name, cbind(input_df, predictions),envir = .GlobalEnv	)
+	assign(name, cbind(input_df, predictions),envir = .GlobalEnv)
 }
 
+```
+
+
+# Analysis
+```{r}
+
+predict_naivebayes(guns_test)
+
+#turning numeric predictions back to numeric
+guns_test_predictions$anti <- as.numeric(guns_test_predictions$anti)
+guns_test_predictions$pro <- as.numeric(guns_test_predictions$pro)
+
+guns_test_predictions <-  guns_test_predictions %>% 
+	mutate(leaning_comb = anti-pro)
 
 
 
-predict_naivebayes2 <- function(input_df) {
-	predictions <- matrix(nrow = length(input_df$clean_text), ncol = 2)
-	colnames(predictions) <- c("Atheism" ,"Religion")
-
-	for (i in 1:nrow(input_df)) {
-		text <- religion_data$clean_text[i]
-		predictions[i,] <- classify_belief2(text)
-	}
-	
-	name <- deparse(substitute(input_df))
-	name <- paste0(name,"_predictions_dist") 
-	assign(name, cbind(input_df, predictions),envir = .GlobalEnv	)
-}
-
-predict_naivebayes(religion_data)
-
-predict_naivebayes2(religion_data)
-
-ggplot(religion_data_predictions_dist, aes(x=Atheism-Religion))+
+#plotting distribution of anti - pro score, to visualize predictions, if values are negative the model will assign the "pro" label if positive the "anti" label. Values closer to 0 indicate higher uncertainty.
+ggplot(guns_test_predictions, aes(x=leaning_comb))+
 	geom_density()
 
-sum(religion_data_predictions$pol_leaning == religion_data_predictions$predictions)/nrow(religion_data_predictions)
+#calculating the accuracy, number of cases where the prediction matches the label(correct classifications) divided by the total number of cases.
+sum(guns_test_predictions$pol_leaning == guns_test_predictions$prediction)/nrow(guns_test_predictions)
 
-religion_data_predictions_ath <- religion_data_predictions %>% filter(pol_leaning == "Atheist")
-religion_data_predictions_rel <- religion_data_predictions %>% filter(pol_leaning == "Religious")
 
-sum(religion_data_predictions_ath$pol_leaning == religion_data_predictions_ath$predictions)/nrow(religion_data_predictions_ath)
-sum(religion_data_predictions_rel$pol_leaning == religion_data_predictions_rel$predictions)/nrow(religion_data_predictions_rel)
+#subsetting to see if prediction accuracy is different across leanings
+guns_test_predictions_anti <- guns_test_predictions %>% filter(pol_leaning == "anti")
+guns_test_predictions_pro <- guns_test_predictions %>% filter(pol_leaning == "pro")
+
+#calculating prediction accuracy for cases of specific leaning
+sum(guns_test_predictions_anti$pol_leaning == guns_test_predictions_anti$prediction)/nrow(guns_test_predictions_anti)
+sum(guns_test_predictions_pro$pol_leaning == guns_test_predictions_pro$prediction)/nrow(guns_test_predictions_pro)
 
 
 ```
 
 
+# summarising by author to get labels for nodes, and saving to nodelist
+```{r}
+guns_test_predictions_to_nodes <- guns_test_predictions %>%
+	select(author, leaning_comb) %>% 
+	group_by(author) %>% 
+	summarise(mean_leaning_comb = mean(leaning_comb)) %>% 
+	mutate(leaning = case_when(
+		mean_leaning_comb > .25 ~ "anti",
+		0.25 >= mean_leaning_comb & mean_leaning_comb > -0.25 ~ "neutral",
+		mean_leaning_comb < -.25 ~ "pro")
+		) %>% 
+	write_csv("../data/[insert_topic_here]_nodelist.csv")
+
+
+```

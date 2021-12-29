@@ -1,0 +1,121 @@
+---
+title: "Create_edgelist"
+author: "Jakob Mørup"
+date: "12/28/2021"
+output: html_document
+---
+```{r}
+library(pacman)
+
+p_load(tidyverse, tidytext, jsonlite)
+```
+
+
+#test for actual data
+```{r}
+
+
+path <- "../EC_Reddit_CaseStudy-main/data/Categories_raw_data/guncontrol_01-06-2020_01-01-2021/guncontrol_01-06-2020_01-01-2021"
+path2 <- "../EC_Reddit_CaseStudy-main/data/Categories_raw_data/guncontrol_01-01-2016_01-01-2021/guncontrol_01-01-2016_01-01-2021"
+
+files <- dir(path, pattern = "*.json")
+files2 <- dir(path2, pattern = "*.json")
+
+
+data <- files %>%
+	map_df(~fromJSON(file.path(path, .), flatten = TRUE))
+
+data <- data$comments
+
+#data <- data %>%
+#	select(author, id, clean_text, subreddit)
+
+
+data$pol_leaning <- case_when(
+	data$subreddit == "guncontrol" ~ "anti",
+	data$subreddit == "liberalgunowners" ~ "pro",
+	data$subreddit == "progun" ~ "pro"
+)
+
+data2 <- files2 %>%
+	map_df(~fromJSON(file.path(path2, .), flatten = TRUE))
+
+data2 <- data2$comments
+
+data2 <-  data2  %>%
+	mutate(pol_leaning ="anti")
+
+
+data_comb <- rbind(data,data2)
+data_comb <- data_comb %>%
+	select(-time_period) %>%
+	distinct()
+
+
+data_comb <- data_comb %>%
+	select(author, id, parent_id, clean_text, subreddit, pol_leaning)
+# 
+# user_ids <- data.frame()
+# user_list <-  unique(data_comb$author)
+# 
+# for (user in user_list) {
+# 	filter(data_comb, author == user) %>%
+# 		select(id, parent_id) -> user_ids[user]
+# }
+
+
+
+user_ids <- data.frame()
+
+data_comb_test <- data_comb[1:10000,]
+
+
+ids_test <- data_comb_test %>%
+				 select(author, id, parent_id) %>% 
+         group_by(author) %>% 
+         summarise(id = list(unique(id)), parent_id = list(unique(parent_id)))
+
+
+id_list <- unique(data_comb$id)
+parent_id_list <- unique(data_comb$parent_id)
+
+# for (id in id_list) {
+# 	x <- id
+# 	if( x %in% parent_id_list == T){
+# 		
+# 	}
+# }
+
+edgelist <-  data.frame()
+
+
+for (i in 1:nrow(data_comb)) {
+	from = data_comb$author[i]
+	
+	comment = data_comb$id[i]
+	
+	comment_to = data_comb$parent_id[i]
+	
+	parent_id_row = data_comb[which(data_comb$id == comment_to),]
+	
+	to = if_else(nrow(parent_id_row$author) == 1, parent_id_row$author, "NA")
+	
+	edge = c(from, to)
+	
+	edgelist <- rbind(edgelist,edge)
+	}
+
+
+	
+comment = data_comb$id[1]
+	
+comment_to = data_comb$parent_id[1]
+	
+nrow(data_comb[which(data_comb$id == comment_to),])
+	
+
+
+
+
+```
+
