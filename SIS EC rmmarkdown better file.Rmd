@@ -1,0 +1,52 @@
+---
+title: "new json sis ecr readclean"
+output: html_document
+---
+
+```{r}
+library(pacman)
+p_load(tidyverse, jsonlite)
+
+getwd()
+```
+
+
+```{r}
+#10
+path <- "C:/Users/gmetz/OneDrive/Dokumenter/Python Scripts/EC_Reddit_CaseStudy-main/data/Categories_raw_data/religionvsatheist_01-01-2020_25-12-2021/religionvsatheist_01-01-2020_25-12-2021"
+files <- dir(path, pattern = "*.json")
+
+data <- files %>%
+	map_df(~fromJSON(file.path(path, .), flatten = TRUE))
+
+data <- data$posts
+
+#data4 <- data
+
+
+data_religion_vs_atheism <- data
+
+#data_religion_vs_atheism <- rbind(data1, data2, data3, data4)
+write_csv(data_religion_vs_atheism, "religion2yrs_allcollumnsposts.csv")
+
+```
+
+```{r}
+getwd()
+data_religion_vs_atheism<- read.csv("religion2yrs_allcollumnsposts.csv")
+data_religion_vs_atheism <- data_religion_vs_atheism %>%
+	select(author, id, clean_text, date)
+
+data1 <- data_religion_vs_atheism
+data_religion_vs_atheism <- data1
+
+
+data_religion_vs_atheism <- data_religion_vs_atheism %>%
+	mutate(lessthansix = str_count(data_religion_vs_atheism$clean_text,"\\w+")<6) %>%
+	filter(lessthansix == FALSE) %>%
+	select(author, clean_text, date, id)
+
+
+write_csv(data_religion_vs_atheism, "religion2yrs_posts.csv")
+```
+

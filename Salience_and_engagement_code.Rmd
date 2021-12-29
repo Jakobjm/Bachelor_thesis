@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 library(pacman)
-p_load(tidyverse,tidytext,pushshiftR, lubridate)
+p_load(tidytext,pushshiftR, lubridate, tidyverse)
 
 ```
 
@@ -82,50 +82,22 @@ p_load(tidyverse,tidytext,pushshiftR, lubridate)
 #1 loading data
 
 ```{r}
-df_religion <- read.csv("rel1week.csv")
-df_canadaguns <- read.csv("provsantigun1week.csv")
-
-tokens_religion <- df_religion %>% unnest_tokens(word, clean_text)
-tokens_canadaguns <- df_canadaguns %>% unnest_tokens(word, clean_text)
+df_religion <- read.csv("religionvsatheist2yrs.csv")
+df_canadaguns <- read.csv("provsantiguns2yrs.csv")
 ```
 
 
-#2 Calculating the ratio of group pronouns over words, as a proxy for social identity salience
-```{r}
-#Defining group and person words
-group_words = c("us","we","them","their", "they", "theirs", "themselves", "our", "ours", "ourselves")
-#person_words = c("i","my","you","your","him","her")
 
-#looking at proportion of plural pronouns in the text of the two subreddits
-sum(tokens_religion$word %in% group_words)/length(tokens_religion$word)
-#sum(tokens_debatereligion$word %in% group_words)/length(tokens_debatereligion$word)
-
-#proportion of proportions, how many more plural pronouns are used in r/religion than in r/gaming per word used.
-#(sum(tokens_religion$word %in% group_words)/length(tokens_religion$word))/(sum(tokens_debatereligion$word %in% group_words)/length(tokens_debatereligion$word))
-
-
-
-#looking at proportion of plural pronouns in the text of the two subreddits
-#sum(tokens_gunpolitics$word %in% group_words)/length(tokens_gunpolitics$word)
-sum(tokens_canadaguns$word %in% group_words)/length(tokens_canadaguns$word)
-
-#proportion of proportions, how many more plural pronouns are used in r/religion than in r/gaming per word used.
-(sum(tokens_religion$word %in% group_words)/length(tokens_religion$word))/(sum(tokens_canadaguns$word %in% group_words)/length(tokens_canadaguns$word))
-
-
-```
-
-
-#3 Looking at engagement by author, number of threads and comments and plotting as a bar plot
+#2 Looking at engagement by author, number of threads and comments and plotting as a bar plot
 ```{r}
 
 # summarising number of comments+threads by author in the respective dataframes (r/religion and r/gunpolitics), then printing the mean amount of threads+comments by author
-df_religion$author <- as.factor(df_religion$author)
-nlevels(df_religion$author)
+#df_religion$author <- as.factor(df_religion$author)
+#nlevels(df_religion$author)
 
 religion_author <- df_religion %>% group_by(author) %>%
 	summarise(n = n())
-mean(religion_author$n)
+religion_author$subreddit <- "religion"
 #same as above but for the gaming subreddit
 #debatereligion_authors <- df_debatereligion %>% group_by(author) %>%
 	#summarise(n = n())
@@ -138,12 +110,18 @@ mean(religion_author$n)
 #same as above but for the gaming subreddit
 canadaguns_author <- df_canadaguns %>% group_by(author) %>%
 	summarise(n = n())
-mean(canadaguns_author$n)
+canadaguns_author$subreddit <- "gun"
 
+
+
+
+
+#merging the two df's so i can plot properly
+engagement_bind <- rbind(religion_author, canadaguns_author)
 
 #plotting a bar chart with number of threads+comments by author for r/religion
-ggplot(religion_author,aes( x = author, y = n))+
-	geom_col()
+#ggplot(religion_author,aes( x = author, y = n))+
+	#geom_col()
 #same as above but for r/debatereligion
 #ggplot(debatereligion_authors,aes( x = author, y = n))+
 	#geom_col()
@@ -152,12 +130,17 @@ ggplot(religion_author,aes( x = author, y = n))+
 #ggplot(gunpolitics_authors,aes( x = author, y = n))+
 	#geom_col()
 #same as above but for r/canadaguns
-ggplot(canadaguns_author,aes( x = author, y = n))+
-	geom_col()
+#ggplot(canadaguns_author,aes( x = author, y = n))+
+	#geom_col()
+
+mean(religion_author$n)
+mean(canadaguns_author$n)
+ggplot(engagement_bind, aes(subreddit, n, col = subreddit)) + geom_boxplot()+ggtitle("Activity for authors")+labs(y = "Activity", x = "Subreddit")
+
 ```
 
 
-#4 Looking at consistency or time active in subreddit
+#3 Looking at consistency or time active in subreddit
 
 ```{r}
 #df_debatereligion$date <-  as.Date(as.POSIXct(df_debatereligion$created_utc, origin="1970-01-01"))
@@ -178,8 +161,10 @@ dates_religion <- df_religion %>%
 	group_by(author) %>% 
 	summarise(n_dates = n()) %>% 
 	mutate(coef_active = n_dates/length(unique(df_religion$date)))
+
+dates_religion$subreddit <- "religion"
  
-mean(dates_religion$coef_active)
+
 
 
 #guns
@@ -202,7 +187,53 @@ dates_canadaguns <- df_canadaguns %>%
 	group_by(author) %>% 
 	summarise(n_dates = n()) %>% 
 	mutate(coef_active = n_dates/length(unique(df_canadaguns$date)))
+
+dates_canadaguns$subreddit <- "gun"
+
+consistency_bind <- rbind(dates_religion, dates_canadaguns)
  
 mean(dates_canadaguns$coef_active)
+mean(dates_religion$coef_active)
+ggplot(consistency_bind, aes(subreddit, coef_active, col = subreddit)) + geom_boxplot()+ggtitle("Consistency for authors")+labs(y = "Consistency", x = "Subreddit")
+```
+
+#4 Calculating the ratio of group pronouns over words, as a proxy for social identity salience
+
+```{r}
+#TOKENIZING
+tokens2 <- df_religion %>% unnest_tokens(word, clean_text)
+tokens1 <- df_canadaguns %>% unnest_tokens(word, clean_text)
+```
+
+
+```{r}
+
+
+#Defining group and person words
+group_words = c("us","we","them","their", "they", "theirs", "themselves", "our", "ours", "ourselves")
+#person_words = c("i","my","you","your","him","her")
+
+#looking at proportion of plural pronouns in the text of the two subreddits
+religion_pronoun_ratio <- sum(tokens1$word %in% group_words)/length(tokens1$word)
+religion_pronoun_ratio #0.02262
+
+gun_pronoun_ratio <- sum(tokens2$word %in% group_words)/length(tokens2$word)
+gun_pronoun_ratio #0.0197
+
+#proportion of proportions, how many more plural pronouns are used in r/religion than in r/gaming per word used.
+ratio_ratios <- religion_pronoun_ratio/gun_pronoun_ratio #1.1478 - hereby religion has a pronoun to word ratio which is 14.78% higher
+
+
+
+
+```
+
+```{r}
+##table.
+tab <- matrix(c(religion_pronoun_ratio, gun_pronoun_ratio, ratio_ratios), ncol=3, byrow=TRUE)
+colnames(tab) <- c('Religion Pronoun ratio','gun pronoun ratio','Ratio of ratios')
+rownames(tab) <- c('rowName1')
+tab <- as.table(tab)
+tab
 ```
 
