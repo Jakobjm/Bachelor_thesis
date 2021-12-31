@@ -54,51 +54,48 @@ data_comb <- data_comb %>%
 
 data_comb <- data_comb %>%
 	select(author, id, parent_id, clean_text, subreddit, pol_leaning)
-# 
-# user_ids <- data.frame()
-# user_list <-  unique(data_comb$author)
-# 
-# for (user in user_list) {
-# 	filter(data_comb, author == user) %>%
-# 		select(id, parent_id) -> user_ids[user]
-# }
 
 
 
-user_ids <- data.frame()
-
-data_comb_test <- data_comb[1:10000,]
+data_comb <- read_csv("data_comb_guns.csv")
 
 
-ids_test <- data_comb_test %>%
-				 select(author, id, parent_id) %>% 
-         group_by(author) %>% 
-         summarise(id = list(unique(id)), parent_id = list(unique(parent_id)))
+```
 
 
-id_list <- unique(data_comb$id)
-parent_id_list <- unique(data_comb$parent_id)
+```{r}
+religion_comments <- read_csv("religionvsatheist2yrs_allcollumns.csv")
+religion_comments <- religion_comments %>% 
+	select(author, id, parent_id)
+religion_comment_ids <- religion_comments %>% 
+	select(author, id)
 
-# for (id in id_list) {
-# 	x <- id
-# 	if( x %in% parent_id_list == T){
-# 		
-# 	}
-# }
+
+religion_posts <- read_csv("religion2yrs_posts.csv")
+religion_posts <-  religion_posts %>% 
+	select(author, id)
+
+
+idlist <-  rbind(religion_comment_ids, religion_posts	)
+```
+
+
+
+#create the edgelist
+```{r}
 
 edgelist <-  data.frame()
 
-
-for (i in 1:nrow(data_comb)) {
-	from = data_comb$author[i]
+for (i in 1193310:nrow(religion_comments)) {
+	from = religion_comments$author[i]
 	
-	comment = data_comb$id[i]
+	comment = religion_comments$id[i]
 	
-	comment_to = data_comb$parent_id[i]
+	comment_to = substr(religion_comments$parent_id[i], 4, 10)
 	
-	parent_id_row = data_comb[which(data_comb$id == comment_to),]
+	parent_id_row = idlist[which(idlist$id == comment_to),]
 	
-	to = if_else(nrow(parent_id_row$author) == 1, parent_id_row$author, "NA")
+	to = if (nrow(parent_id_row)== 1) { parent_id_row$author } else{ "NA"}
 	
 	edge = c(from, to)
 	
@@ -106,15 +103,16 @@ for (i in 1:nrow(data_comb)) {
 	}
 
 
-	
-comment = data_comb$id[1]
-	
-comment_to = data_comb$parent_id[1]
-	
-nrow(data_comb[which(data_comb$id == comment_to),])
-	
+
+colnames(edgelist) <- c("From", "to")
+
+# 
 
 
+edgelist2 <- edgelist %>% 
+	distinct()
+
+#write_csv(edgelist2, "religion_edgelist_2yrs.csv")
 
 
 ```
