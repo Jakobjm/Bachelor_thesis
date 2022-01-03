@@ -13,23 +13,23 @@ p_load(tidyverse, lava, gt)
 
 
 ```{r}
-guns_partitions <-  read_csv("guns_partitions.csv")
-colnames(guns_partitions) <- c("author", "community")
+rel_partitions <-  read_csv("religion_partitions.csv")
+colnames(rel_partitions) <- c("author", "community")
 
 
-guns_nodes <-  read_csv("guns_nodelist.csv")
-guns_comb <-  inner_join(guns_nodes, guns_partitions)
-guns_comb$community = guns_comb$community+1
+rel_nodes <-  read_csv("religion_nodelist_full.csv")
+rel_comb <-  inner_join(rel_nodes, rel_partitions)
+rel_comb$community = rel_comb$community+1
 
 ```
 
 
 
 ```{r}
-summary_comm_guns <- data.frame()
+summary_comm_rel <- data.frame()
 
-for (i in 1:length(unique(guns_comb$community))) {
-	temp <-  filter(guns_comb, community == i)
+for (i in 1:length(unique(rel_comb$community))) {
+	temp <-  filter(rel_comb, community == i)
 	temp_pro_percent <- nrow(filter(temp, leaning == "pro"))/nrow(temp)
 	temp_anti_percent <- nrow(filter(temp, leaning == "anti"))/nrow(temp)
 	temp_neutral_percent <- nrow(filter(temp, leaning == "neutral"))/nrow(temp)
@@ -40,7 +40,7 @@ for (i in 1:length(unique(guns_comb$community))) {
   community <-  i
   community_size <- nrow(temp)
   community_temp <- cbind(community, temp_pro_count, temp_pro_percent, temp_neutral_count, temp_neutral_percent,temp_anti_count, temp_anti_percent, community_size)
-  summary_comm_guns <- rbind(summary_comm_guns, community_temp)
+  summary_comm_rel <- rbind(summary_comm_rel, community_temp)
 	
 }
 
@@ -54,23 +54,26 @@ for (i in 1:length(unique(guns_comb$community))) {
 
 
 ```{r}
-guns_edgelist <- read_csv("guns_edgelist_2yrs.csv")
+rel_edgelist <- read_csv("religion_edgelist_2yrs.csv")
+rel_edgelist2 <- complete.cases(rel_edgelist)
+rel_edgelist <- rel_edgelist[rel_edgelist2,]
 
-# for (i in 1:length(unique(guns_comb$community))) {
-# 	temp <-  filter(guns_comb, community == i)
+
+# for (i in 1:length(unique(rel_comb$community))) {
+# 	temp <-  filter(rel_comb, community == i)
 # 	temp_users <- temp$author
 # 	
 # }
 
 foo <- function(){}
 #filtering edges by community
-
+conductance <- c()
 conductance_by_community <- function(input_df){
 
 for (comm in 1:length(unique(input_df$community))){
 	temp <- filter(input_df, community == comm )
 	temp_users <-  temp$author
-	temp_edges <- filter(guns_edgelist, guns_edgelist$From %in% temp_users | guns_edgelist$to %in% temp_users)
+	temp_edges <- filter(rel_edgelist, rel_edgelist$From %in% temp_users | rel_edgelist$to %in% temp_users)
 	author_temp_edges <- temp_edges  %>% group_by(From) %>% summarise(to =list(to))
 	removelist <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("From", "to"))
 	removelist$From <- as.character(removelist$From)
@@ -91,46 +94,46 @@ conductance[comm] <- nrow(temp_edges_internal)/nrow(temp_edges)}
 return(conductance)
 }
 
-conductance_list <- conductance_by_community(guns_comb)
+conductance_list <- conductance_by_community(rel_comb)
 
 
 
-foo <- function(){}
-removelist <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("From", "to"))
-removelist$From <- as.character(removelist$From)
-removelist$to <- as.character(removelist$to)
+# foo <- function(){}
+# removelist <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("From", "to"))
+# removelist$From <- as.character(removelist$From)
+# removelist$to <- as.character(removelist$to)
+# 
+# 
+# for (i in 1:1222) {
+# 	tmp <- author_temp_edges$From[i]
+# 	tmp_to_list <- author_temp_edges$to[[i]]
+# 	for (j in 1:length(tmp_to_list)){
+# 		tmp2 <- tmp_to_list[j]
+# 		x <- filter(author_temp_edges, From == tmp2)
+# 		if(nrow(x)==0){foo} else if (tmp %in% x$to[[1]] == TRUE & nrow(filter(removelist, removelist$From == tmp& removelist$to ==tmp2))==0){removelist <- rbind(removelist, filter(temp_edges, temp_edges$From == tmp2 & temp_edges$to == tmp))}
+# 	}
+# 	
+# }
 
 
-for (i in 1:1222) {
-	tmp <- author_temp_edges$From[i]
-	tmp_to_list <- author_temp_edges$to[[i]]
-	for (j in 1:length(tmp_to_list)){
-		tmp2 <- tmp_to_list[j]
-		x <- filter(author_temp_edges, From == tmp2)
-		if(nrow(x)==0){foo} else if (tmp %in% x$to[[1]] == TRUE & nrow(filter(removelist, removelist$From == tmp& removelist$to ==tmp2))==0){removelist <- rbind(removelist, filter(temp_edges, temp_edges$From == tmp2 & temp_edges$to == tmp))}
-	}
-	
-}
+summary_comm_rel$conductance <- conductance_list
 
 
-summary_comm_guns$conductance <- conductance_list
-
-
-summary_comm_guns_10 <- filter(summary_comm_guns, community_size >= 10)
-colnames(summary_comm_guns_10) <- c("Community","Pro_count", "Pro_percent", "Neutral_count","Neutral_percent","Anti_count","Anti_percent","Community_size","Conductance")
+summary_comm_rel_10 <- filter(summary_comm_rel, community_size >= 10)
+colnames(summary_comm_rel_10) <- c("Community","Pro_count", "Pro_percent", "Neutral_count","Neutral_percent","Anti_count","Anti_percent","Community_size","Conductance")
 
 ```
 
 
 
 ```{r}
-communities_guns_table <- summary_comm_guns_10 %>%  gt() %>% 
-	tab_header("Gun control", subtitle = "Summary statisics of discovered communities with more than 10 members") %>% 
+communities_rel_table <- summary_comm_rel_10 %>%  gt() %>% 
+	tab_header("Religion vs Atheism", subtitle = "Summary statisics of discovered communities with more than 10 members") %>% 
 	fmt_number(
     columns = c(Community,Pro_count, Pro_percent, Neutral_count,Neutral_percent,Anti_count,Anti_percent,Community_size,Conductance),
     suffixing = F
   )
-communities_guns_table
+communities_rel_table
 
 ```
 

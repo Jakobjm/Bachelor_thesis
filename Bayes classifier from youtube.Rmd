@@ -12,7 +12,7 @@ p_load(tidyverse, data.table)
 
 # Preprocess etc.:
 ```{r}
-religion_data <- read_csv("clean_atheismvsreligion_6months.csv")
+religion_data <- read_csv("clean_proantiguns_6months.csv")
 
 #Cleaning: 
 
@@ -101,7 +101,7 @@ classify_belief <-  function(input) {
 
 
 ```{r}
-religion_data_EC <- read_csv("religionvsatheist2yrs_allcollumns.csv") 
+religion_data_EC <- read_csv("provsantigun2yrs_allcollumns.csv")
 
 religion_data_ec1 <- religion_data_EC[1:682638,]
 religion_data_ec2 <- religion_data_EC[682639:1365277,]
@@ -116,7 +116,7 @@ religion_data_EC <- religion_data_EC %>%
 
 
 
-#function to run our classifier on a dataset
+#function to run our classifier on a dataset 
 ```{r}
 
 # creates a matrix to fill in with values from predictions, then runs the classify belief function, writes the output into the matrix names and saves to globalEnv a new dataframe with predictions appended
@@ -143,16 +143,16 @@ predict_naivebayes <- function(input_df) {
 predict_naivebayes(religion_data_EC)
 
 #turning numeric predictions back to numeric
-religion_test_predictions$anti <- as.numeric(religion_test_predictions$anti)
-religion_test_predictions$pro <- as.numeric(religion_test_predictions$pro)
+religion_data_EC_predictions$anti <- as.numeric(religion_data_EC_predictions$anti)
+religion_data_EC_predictions$pro <- as.numeric(religion_data_EC_predictions$pro)
 
-religion_test_predictions <-  religion_test_predictions %>% 
+religion_data_EC_predictions <-  religion_data_EC_predictions %>% 
 	mutate(leaning_comb = anti-pro)
 
 
 
 #plotting distribution of anti - pro score, to visualize predictions, if values are negative the model will assign the "pro" label if positive the "anti" label. Values closer to 0 indicate higher uncertainty.
-ggplot(religion_test_predictions, aes(x=leaning_comb))+
+ggplot(religion_data_EC_predictions, aes(x=leaning_comb))+
 	geom_density()
 
 #calculating the accuracy, number of cases where the prediction matches the label(correct classifications) divided by the total number of cases.
@@ -173,7 +173,7 @@ sum(religion_test_predictions_pro$pol_leaning == religion_test_predictions_pro$p
 
 # summarising by author to get labels for nodes, and saving to nodelist
 ```{r}
-religion_test_predictions_to_nodes <- religion_test_predictions %>%
+religion_data_EC_predictions_to_nodes <- religion_data_EC_predictions %>%
 	select(author, leaning_comb) %>% 
 	group_by(author) %>% 
 	summarise(mean_leaning_comb = mean(leaning_comb)) %>% 
@@ -181,8 +181,9 @@ religion_test_predictions_to_nodes <- religion_test_predictions %>%
 		mean_leaning_comb > .25 ~ "anti",
 		0.25 >= mean_leaning_comb & mean_leaning_comb > -0.25 ~ "neutral",
 		mean_leaning_comb < -.25 ~ "pro")
-		) %>% 
-	write_csv("religion_nodelist")
+		)
+
+write_csv(religion_data_EC_predictions_to_nodes,"guns_nodelist")
 
 
 ```
