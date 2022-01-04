@@ -1,0 +1,189 @@
+---
+title: "Bachelor proj bayesian classification"
+output: html_document
+---
+
+
+```{r}
+library(pacman, biocmanager)
+p_load(stopwords, tokenizers, SnowballC, dplyr, tidytext, caret)
+p_load(tidyverse, data.table)
+```
+
+# Preprocess etc.:
+```{r}
+religion_data <- read_csv("clean_proantiguns_6months.csv")
+
+#Cleaning: 
+
+table(religion_data$pol_leaning)
+
+
+
+sub_rel <- religion_data %>% 
+	filter(pol_leaning == "pro") %>% 
+	sample_n(size = nrow(filter(religion_data, pol_leaning == "anti")),prob = NULL, replace =FALSE)
+
+religion_data1 <- religion_data %>% 
+	filter(pol_leaning =="anti") %>% 
+	rbind(sub_rel)
+
+
+#creating an 80% train 20% test split
+sample <- sample.int(n = nrow(religion_data1), size = floor(.80*nrow(religion_data1)), replace = F)
+religion_train <- religion_data1[sample, ]
+religion_test  <- religion_data1[-sample, ]
+rm(sample)
+
+#tokenizing
+religion_train$clean_text <- (tokenize_words(religion_train$clean_text,
+																						lowercase = TRUE,
+																						strip_punct = TRUE,
+																						strip_numeric = TRUE,
+																						stopwords = stopwords::stopwords("en"))
+																						)
+
+
+```
+
+#training the model on the train set
+```{r}
+
+table(religion_train$pol_leaning)
+
+#prior probability
+prior_anti <- (table(religion_train$pol_leaning) / sum(table(religion_train$pol_leaning)))[1]
+prior_pro <- (table(religion_train$pol_leaning) / sum(table(religion_train$pol_leaning)))[2]
+
+#function for setting up the model
+calc_probs <- function(tokens) {
+	counts <- table(unlist(tokens)) + 1
+	(counts/sum(counts))
+}
+
+
+#seperate data
+anti_data <- subset(religion_train, pol_leaning == "anti")
+pro_data <- subset(religion_train, pol_leaning == "pro")
+
+
+#calc probabilities
+anti_probs <- calc_probs(anti_data$clean_text)
+pro_probs <- calc_probs(pro_data$clean_text)
+
+
+
+```
+
+#Actual classifier function
+```{r}
+#naive bayes classifier, tokenizes, lowercases, strips punctuation, numeric values, and common english stopwords, then calculates posterior probability that a post belongs to a given leaning/subreddit 
+# by multiplying prior probability with the joint probability for each token in the post to be in posts of that leaning, NAs are treated as a 1, as that shouldn't affect the joint probability  
+# as p(x)*p(y)*p(z)*1 == p(x)*p(y)*p(z). Then it returns the posterior probabilities of the post beloning to each leaning and a label based on which has the highest probability.
+classify_belief <-  function(input) {
+	test <- unlist(tokenize_words(input,
+																lowercase = TRUE, 
+																strip_punct = TRUE, 
+																strip_numeric = TRUE,
+																stopwords = stopwords::stopwords("en")))
+	#print(test)
+	anti_pred <- prior_anti * ifelse(is.na(prod(anti_probs[test])), 1, prod(anti_probs[test]))
+	pro_pred <- prior_pro * ifelse(is.na(prod(pro_probs[test])), 1, prod(pro_probs[test]))
+	
+	return(c(anti_pred, pro_pred,	if (anti_pred < pro_pred) {
+		("pro")
+	} else {("anti")}))
+}
+
+```
+
+
+
+
+```{r}
+religion_data_EC <- read_csv("provsantigun2yrs_allcollumns.csv")
+
+religion_data_ec1 <- religion_data_EC[1:682638,]
+religion_data_ec2 <- religion_data_EC[682639:1365277,]
+write_csv(religion_data_ec2, file= "religion_EC_part2")
+
+
+religion_data_EC <- religion_data_EC %>% 
+	select(author, clean_text)
+
+
+```
+
+
+
+#function to run our classifier on a dataset 
+```{r}
+
+# creates a matrix to fill in with values from predictions, then runs the classify belief function, writes the output into the matrix names and saves to globalEnv a new dataframe with predictions appended
+predict_naivebayes <- function(input_df) {
+	predictions <- matrix(nrow = length(input_df$clean_text), ncol = 3)
+	colnames(predictions) <- c("anti" ,"pro", "prediction")
+
+	for (i in 1:nrow(input_df)) {
+		text <- input_df$clean_text[i]
+		predictions[i,] <- classify_belief(text)
+	}
+	
+	name <- deparse(substitute(input_df))
+	name <- paste0(name,"_predictions") 
+	assign(name, cbind(input_df, predictions),envir = .GlobalEnv)
+}
+
+```
+
+
+# Analysis
+```{r}
+
+predict_naivebayes(religion_data_EC)
+
+#turning numeric predictions back to numeric
+religion_data_EC_predictions$anti <- as.numeric(religion_data_EC_predictions$anti)
+religion_data_EC_predictions$pro <- as.numeric(religion_data_EC_predictions$pro)
+
+religion_data_EC_predictions <-  religion_data_EC_predictions %>% 
+	mutate(leaning_comb = anti-pro)
+
+
+
+#plotting distribution of anti - pro score, to visualize predictions, if values are negative the model will assign the "pro" label if positive the "anti" label. Values closer to 0 indicate higher uncertainty.
+ggplot(religion_data_EC_predictions, aes(x=leaning_comb))+
+	geom_density()
+
+#calculating the accuracy, number of cases where the prediction matches the label(correct classifications) divided by the total number of cases.
+sum(religion_test_predictions$pol_leaning == religion_test_predictions$prediction)/nrow(religion_test_predictions)
+
+
+#subsetting to see if prediction accuracy is different across leanings
+religion_test_predictions_anti <- religion_test_predictions %>% filter(pol_leaning == "anti")
+religion_test_predictions_pro <- religion_test_predictions %>% filter(pol_leaning == "pro")
+
+#calculating prediction accuracy for cases of specific leaning
+sum(religion_test_predictions_anti$pol_leaning == religion_test_predictions_anti$prediction)/nrow(religion_test_predictions_anti)
+sum(religion_test_predictions_pro$pol_leaning == religion_test_predictions_pro$prediction)/nrow(religion_test_predictions_pro)
+
+
+```
+
+
+# summarising by author to get labels for nodes, and saving to nodelist
+```{r}
+religion_data_EC_predictions_to_nodes <- religion_data_EC_predictions %>%
+	select(author, leaning_comb) %>% 
+	group_by(author) %>% 
+	summarise(mean_leaning_comb = mean(leaning_comb)) %>% 
+	mutate(leaning = case_when(
+		mean_leaning_comb > .25 ~ "anti",
+		0.25 >= mean_leaning_comb & mean_leaning_comb > -0.25 ~ "neutral",
+		mean_leaning_comb < -.25 ~ "pro")
+		)
+
+write_csv(religion_data_EC_predictions_to_nodes,"guns_nodelist")
+
+
+```
