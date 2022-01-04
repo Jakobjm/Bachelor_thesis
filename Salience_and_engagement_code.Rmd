@@ -10,7 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 library(pacman)
-p_load(tidytext,pushshiftR, lubridate, tidyverse)
+p_load(tidytext,pushshiftR, lubridate, tidyverse, lattice, hrbrthemes, Hmisc)
+#install.packages("Hmisc")
+#load(Hmisc)
 
 ```
 
@@ -82,32 +84,29 @@ p_load(tidytext,pushshiftR, lubridate, tidyverse)
 #1 loading data
 
 ```{r}
-df_religion <- read.csv("religionvsatheist2yrs.csv")
-df_canadaguns <- read.csv("provsantiguns2yrs.csv")
+
+df_rel_posts <- read.csv("C:/Users/gmetz/OneDrive/Dokumenter/rstudio files/Bachelor_thesis/religion2yrs_posts.csv")
+df_religionn <- read.csv("religionvsatheist2yrs.csv")
+df_religion <- rbind(df_religionn, df_rel_posts)
+
+df_can_posts <- read.csv("guns2yrs_posts.csv")
+df_canadagunss <- read.csv("provsantiguns2yrs.csv")
+df_canadaguns <- rbind(df_can_posts, df_canadagunss)
+remove(df_canadagunss, df_religionn, df_can_posts, df_rel_posts)
 ```
 
 
 
-#2 Looking at engagement by author, number of threads and comments and plotting as a bar plot
+#2 Looking at Activity		 by author, number of threads and comments and plotting as a bar plot
 ```{r}
-
-# summarising number of comments+threads by author in the respective dataframes (r/religion and r/gunpolitics), then printing the mean amount of threads+comments by author
-#df_religion$author <- as.factor(df_religion$author)
-#nlevels(df_religion$author)
 
 religion_author <- df_religion %>% group_by(author) %>%
 	summarise(n = n())
 religion_author$subreddit <- "religion"
-#same as above but for the gaming subreddit
-#debatereligion_authors <- df_debatereligion %>% group_by(author) %>%
-	#summarise(n = n())
-#mean(debatereligion_authors$n)
 
-#same as above but for the gaming subreddit
-#gunpolitics_authors <- df_gunpolitics %>% group_by(author) %>%
-	#summarise(n = n())
-#mean(gunpolitics_authors$n)
-#same as above but for the gaming subreddit
+
+
+
 canadaguns_author <- df_canadaguns %>% group_by(author) %>%
 	summarise(n = n())
 canadaguns_author$subreddit <- "gun"
@@ -119,43 +118,128 @@ canadaguns_author$subreddit <- "gun"
 #merging the two df's so i can plot properly
 engagement_bind <- rbind(religion_author, canadaguns_author)
 
-#plotting a bar chart with number of threads+comments by author for r/religion
-#ggplot(religion_author,aes( x = author, y = n))+
-	#geom_col()
-#same as above but for r/debatereligion
-#ggplot(debatereligion_authors,aes( x = author, y = n))+
-	#geom_col()
+```
 
-#same as above but for r/gunpolitics
-#ggplot(gunpolitics_authors,aes( x = author, y = n))+
-	#geom_col()
-#same as above but for r/canadaguns
-#ggplot(canadaguns_author,aes( x = author, y = n))+
-	#geom_col()
+```{r}
+#                           UTPUT AND VISUALIZAIONNN
 
 mean(religion_author$n)
+sd(religion_author$n)
+median(religion_author$n)
+
 mean(canadaguns_author$n)
-ggplot(engagement_bind, aes(subreddit, n, col = subreddit)) + geom_boxplot()+ggtitle("Activity for authors")+labs(y = "Activity", x = "Subreddit")
+sd(canadaguns_author$n)
+median(religion_author$n)
+
+quantile(religion_author$n)
+quantile(canadaguns_author$n)
+
+
+ggplot(engagement_bind, aes(subreddit, n, col = subreddit)) + geom_jitter()+ggtitle("                                              Activity for Authors")+labs(y = "Activity", x = "Subreddit")
+
+
+##########HISTOGRAMS WHICH SEEM TO GIVE NO INERPRETABLE INFORMATION
+# r <- religion_author %>%
+#   ggplot( aes(x=n)) +
+#     geom_histogram( binwidth=100, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+#     ggtitle("Religion Activity") +
+# 	  #xlim(0.0, 100) +
+# 	  #ylim(0.0, 100) +
+#     theme_ipsum() +
+#     theme(
+#       plot.title = element_text(size=15)
+#     )
+# r
+# 
+# g <- canadaguns_author %>%
+#   ggplot( aes(x=n)) +
+#     geom_histogram( binwidth=100, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+#     ggtitle("Guns Activity") +
+# 	  #xlim(0.0, 100) +
+# 	 #ylim(0.0, 100) +
+#     theme_ipsum() +
+#     theme(
+#       plot.title = element_text(size=15)
+#     )
+# g
+
+
+#subseting into quantiles 
+religion_author$group <- as.numeric(cut2(religion_author$n, g=4))
+
+religion_author_big <- religion_author %>% 
+	filter(group == 4)
+religion_author_smaller <- religion_author %>% 
+	filter(group == 3)
+religion_author_smallerr <- religion_author %>% 
+	filter(group == 2)
+religion_author_smallerrr <- religion_author %>% 
+	filter(group == 1)
+
+#for guns
+canadaguns_author$group <- as.numeric(cut2(canadaguns_author$n, g=4))
+
+canadaguns_author_big <- canadaguns_author %>% 
+	filter(group == 4)
+canadaguns_author_smaller <- canadaguns_author %>% 
+	filter(group == 3)
+canadaguns_author_smallerr <- canadaguns_author %>% 
+	filter(group == 2)
+canadaguns_author_smallerrr <- canadaguns_author %>% 
+	filter(group == 1)
+
+
+
+#Big comparison
+mean(religion_author_big$n) #94.79
+mean(canadaguns_author_big$n) #42.87
+sd(religion_author_big$n) #261.7801
+sd(canadaguns_author_big$n) #96.72155
+
+median(religion_author_big$n)
+median(canadaguns_author_big$n)
+
+mean(religion_author_smaller$n) #94.79
+mean(canadaguns_author_smaller$n) #42.87
+sd(religion_author_smaller$n)
+sd(canadaguns_author_smaller$n)
+
+d <- 3
+d
+mean(religion_author_smallerr$n) #94.79
+mean(canadaguns_author_smallerr$n) #42.87
+sd(religion_author_smallerr$n)
+sd(canadaguns_author_smallerr$n)
+
+mean(religion_author_smallerrr$n) #94.79
+mean(canadaguns_author_smallerrr$n) #42.87
+sd(religion_author_smallerrr$n)
+sd(canadaguns_author_smallerrr$n)
+
+
+
+
+
+
+
+
+quantile(religion_author_sub$n)
+quantile(canadaguns_author_sub$n)
+
+
+#binding df's
+engagement_bind_sub <- rbind(religion_author_sub, canadaguns_author_sub) 
+#ggplot(engagement_bind_sub, aes(subreddit, n, col = subreddit)) + geom_jitter()+ggtitle("                                              Activity for Authors")+labs(y = "Activity", x = "Subreddit")# no visual difference
 
 ```
+
 
 
 #3 Looking at consistency or time active in subreddit
 
 ```{r}
-#df_debatereligion$date <-  as.Date(as.POSIXct(df_debatereligion$created_utc, origin="1970-01-01"))
 
-#dates_debatereligion <- df_debatereligion %>%
-	#distinct(author, date, .keep_all = T) %>% 
-	#group_by(author) %>% 
-	#summarise(n_dates = n()) %>% 
-	#mutate(coef_active = n_dates/length(unique(df_debatereligion$date)))
- 
-#mean(dates_debatereligion$coef_active)
-
-
-#df_religion$date <-  as.Date(as.POSIXct(df_religion$created_utc, origin="1970-01-01"))
-
+#rel consistency calc
 dates_religion <- df_religion %>%
 	distinct(author, date, .keep_all = T) %>% 
 	group_by(author) %>% 
@@ -165,23 +249,7 @@ dates_religion <- df_religion %>%
 dates_religion$subreddit <- "religion"
  
 
-
-
-#guns
-
-#df_gunpolitics$date <-  as.Date(as.POSIXct(df_gunpolitics$created_utc, origin="1970-01-01"))
-
-#dates_gunpolitics <- df_gunpolitics %>%
-	#distinct(author, date, .keep_all = T) %>% 
-	#group_by(author) %>% 
-	#summarise(n_dates = n()) %>% 
-	#mutate(coef_active = n_dates/length(unique(df_gunpolitics$date)))
- 
-#mean(dates_gunpolitics$coef_active)
-
-
-#df_canadaguns$date <-  as.Date(as.POSIXct(df_canadaguns$created_utc, origin="1970-01-01"))
-
+#gun
 dates_canadaguns <- df_canadaguns %>%
 	distinct(author, date, .keep_all = T) %>% 
 	group_by(author) %>% 
@@ -190,12 +258,84 @@ dates_canadaguns <- df_canadaguns %>%
 
 dates_canadaguns$subreddit <- "gun"
 
+#binding datasets
 consistency_bind <- rbind(dates_religion, dates_canadaguns)
  
-mean(dates_canadaguns$coef_active)
-mean(dates_religion$coef_active)
-ggplot(consistency_bind, aes(subreddit, coef_active, col = subreddit)) + geom_boxplot()+ggtitle("Consistency for authors")+labs(y = "Consistency", x = "Subreddit")
+
 ```
+
+```{r}
+##RESULTSS
+d=3
+d
+mean(dates_religion$coef_active)
+sd(dates_religion$coef_active)
+
+mean(dates_canadaguns$coef_active)
+sd(dates_canadaguns$coef_active)
+
+
+quantile(dates_religion$coef_active)
+quantile(dates_canadaguns$coef_active)
+#We see excactly the same values for the first three quartiles (75%) of the data - meaning that 75% of the people in both subreddits have below 0.0056% active days, also put as 4 or below 4 active days on the subreddit. It's in the upper 25% of the population that there is a systematic difference between the activity of the users in the two subreddits. 
+
+#visualization
+ggplot(consistency_bind, aes(subreddit, coef_active, col = subreddit)) + geom_jitter()+ggtitle("Consistency for authors")+labs(y = "Consistency", x = "Subreddit")
+
+
+### Subsettig highest 2%
+dates_religion$group <- as.numeric(cut2(dates_religion$coef_active, g=4))
+dates_religion_sub <- dates_religion %>%
+	filter(group == 4)
+
+
+dates_canadaguns$group <- as.numeric(cut2(dates_canadaguns$coef_active, g=4))
+dates_canadaguns_sub <- dates_canadaguns %>%
+	filter(group == 4)
+
+d
+mean(dates_religion_sub$coef_active)
+sd(dates_religion_sub$coef_active)
+median(dates_religion_sub$coef_active)
+
+mean(dates_canadaguns_sub$coef_active)
+sd(dates_canadaguns_sub$coef_active)
+median(dates_canadaguns_sub$coef_active)
+
+consistency_bind_sub <- rbind(dates_canadaguns_sub, dates_religion_sub)
+
+#stripplot(consistency_bind$coef_active ~ consistency_bind$subreddit, jitter=T)
+
+# r <- dates_religion %>%
+#   ggplot( aes(x=coef_active)) +
+#     geom_histogram( binwidth=0.0007, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+#     ggtitle("Religion Consistency") +
+# 	  xlim(0.0, 0.95) +
+# 	  ylim(0.0, 1500) +
+#     theme_ipsum() +
+#     theme(
+#       plot.title = element_text(size=15)
+#     )
+# r
+# 
+# 
+# g <- dates_canadaguns %>%
+#   ggplot( aes(x=coef_active)) +
+#     geom_histogram( binwidth=0.0007, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+#     ggtitle("Guns Consistency") +
+# 	  xlim(0.0, 0.9) +
+# 	  ylim(0.0, 1500) +
+#     theme_ipsum() +
+#     theme(
+#       plot.title = element_text(size=15)
+#     )
+# g
+
+```
+
+
+
+#describin this non-normal data... SD seems to be not very inerpretable. quantiles and quartiles are. 
 
 #4 Calculating the ratio of group pronouns over words, as a proxy for social identity salience
 
@@ -203,11 +343,11 @@ ggplot(consistency_bind, aes(subreddit, coef_active, col = subreddit)) + geom_bo
 #TOKENIZING
 tokens2 <- df_religion %>% unnest_tokens(word, clean_text)
 tokens1 <- df_canadaguns %>% unnest_tokens(word, clean_text)
+remove(df_canadaguns, df_religion)
 ```
 
 
 ```{r}
-
 
 #Defining group and person words
 group_words = c("us","we","them","their", "they", "theirs", "themselves", "our", "ours", "ourselves")
@@ -215,14 +355,47 @@ group_words = c("us","we","them","their", "they", "theirs", "themselves", "our",
 
 #looking at proportion of plural pronouns in the text of the two subreddits
 religion_pronoun_ratio <- sum(tokens1$word %in% group_words)/length(tokens1$word)
-religion_pronoun_ratio #0.02262
+religion_pronoun_ratio #0.02247
+
+# #pr person so we can have sd of the mean
+# religion_person <- tokens1 %>%
+# 	#distinct(author, date, .keep_all = T) %>% 
+# 	group_by(author) %>% 
+# 	mutate(nr_pronouns = sum(tokens1$word %in% group_words))
+# 
+# 
+# 
+# 
+# 
+# religion_person <- tokens1 %>% 
+# 	group_by(author) %>% 
+# 	mutate()
+# 	summarise(n = n())
+# 
+# 
+# religion_person <- tokens1 %>%  
+# group_by(author) %>% 
+# summarise(sum(tokens1))
+# summarise(mean(RT),sd(RT), 
+# n())
+# 
+# 
+# #remove(religion_person)
+# 
+# dates_religion <- df_religion %>%
+# 	distinct(author, date, .keep_all = T) %>% 
+# 	group_by(author) %>% 
+# 	summarise(n_dates = n()) %>% 
+# 	mutate(coef_active = n_dates/length(unique(df_religion$date)))
+
+
 
 gun_pronoun_ratio <- sum(tokens2$word %in% group_words)/length(tokens2$word)
-gun_pronoun_ratio #0.0197
+gun_pronoun_ratio #0.01968
 
 #proportion of proportions, how many more plural pronouns are used in r/religion than in r/gaming per word used.
-ratio_ratios <- religion_pronoun_ratio/gun_pronoun_ratio #1.1478 - hereby religion has a pronoun to word ratio which is 14.78% higher
-
+ratio_ratios <- religion_pronoun_ratio/gun_pronoun_ratio 
+ratio_ratios     #1.14217 - hereby religion has a pronoun to word ratio which is 14.21% higher
 
 
 
