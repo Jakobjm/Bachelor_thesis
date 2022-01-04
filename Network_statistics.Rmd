@@ -120,7 +120,7 @@ summary_comm_rel$conductance <- conductance_list
 
 
 summary_comm_rel_10 <- filter(summary_comm_rel, community_size >= 10)
-colnames(summary_comm_rel_10) <- c("Community","Pro_count", "Pro_percent", "Neutral_count","Neutral_percent","Anti_count","Anti_percent","Community_size","Conductance")
+colnames(summary_comm_rel_10) <- c("Community","For_count", "For_percent", "Neutral_count","Neutral_percent","Against_count","Against_percent","Community_size","Conductance")
 
 ```
 
@@ -128,9 +128,9 @@ colnames(summary_comm_rel_10) <- c("Community","Pro_count", "Pro_percent", "Neut
 
 ```{r}
 communities_rel_table <- summary_comm_rel_10 %>%  gt() %>% 
-	tab_header("Religion vs Atheism", subtitle = "Summary statisics of discovered communities with more than 10 members") %>% 
+	tab_header("Religion", subtitle = "Summary statisics of discovered communities with more than 10 members") %>% 
 	fmt_number(
-    columns = c(Community,Pro_count, Pro_percent, Neutral_count,Neutral_percent,Anti_count,Anti_percent,Community_size,Conductance),
+    columns = c(Community,For_count, For_percent, Neutral_count,Neutral_percent,Against_count,Against_percent,Community_size,Conductance),
     suffixing = F
   )
 communities_rel_table

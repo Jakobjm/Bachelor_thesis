@@ -2,8 +2,7 @@ library(pacman)
 p_load(tidyverse, jsonlite)
 
 
-path <- "../EC_Reddit_CaseStudy-main/data/Categories_raw_data/guncontrol_01-06-2020_01-01-2021/guncontrol_01-06-2020_01-01-2021"
-path2 <- "../EC_Reddit_CaseStudy-main/data/Categories_raw_data/guncontrol_01-01-2016_01-01-2021/guncontrol_01-01-2016_01-01-2021"
+path <- "../EC_Reddit_CaseStudy-main/data/Categories_raw_data/religion_01-06-2020_01-01-2021/religion_01-06-2020_01-01-2021"
 
 files <- dir(path, pattern = "*.json")
 files2 <- dir(path2, pattern = "*.json")
@@ -14,14 +13,19 @@ data <- files %>%
 
 data <- data$comments
 
-#data <- data %>%
-#	select(author, id, clean_text, subreddit)
+data <- data %>%
+	select(author, id, clean_text, subreddit)
 
 
 data$pol_leaning <- case_when(
-	data$subreddit == "guncontrol" ~ "anti",
-	data$subreddit == "liberalgunowners" ~ "pro",
-	data$subreddit == "progun" ~ "pro"
+	data$subreddit == "atheism" ~ "anti",
+	data$subreddit == "Catholicism" ~ "pro",
+	data$subreddit == "Christianity" ~ "pro",
+	data$subreddit == "Buddhism" ~ "pro",
+	data$subreddit == "islam" ~ "pro",
+	data$subreddit == "hinduism" ~ "pro",
+	data$subreddit == "Trueatheism" ~ "anti",
+	data$subreddit == "Antitheism" ~ "anti"
 )
 
 data2 <- files2 %>%
@@ -81,8 +85,8 @@ data_comb <- data_comb %>%
 
 
 
-data_proantiguns <- data_comb %>%
-	mutate(lessthansix = str_count(data_comb$clean_text,"\\w+")<6) %>%
+data_atheismvsreligion <- data %>%
+	mutate(lessthansix = str_count(data$clean_text,"\\w+")<6) %>%
 	filter(lessthansix == FALSE) %>%
 	select(author, clean_text, pol_leaning, id)
 
@@ -92,6 +96,6 @@ data_proantiguns <- data_comb %>%
 # 	filter(lessthansix == FALSE) %>%
 # 	select(author, clean_text, pol_leaning, id)
 
-write_csv(data_proantiguns, "clean_proantiguns_6months")
+write_csv(data_atheismvsreligion, "clean_atheismvsreligion_6months")
 #write_csv(data_religion_vs_atheism, "provsantigun1week.csv")
 #write_csv(data_religion_vs_atheism, "provsantigun1week.csv")
